@@ -1,0 +1,2334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Journal Finder — CSU Library</title>
+<style>
+  :root {
+    --csu-orange:    #F0572A;
+    --csu-orange-dk: #DA3D0F;
+    --csu-charcoal:  #222222;
+    --csu-navy:      #222944;
+    --csu-navy-2:    #2C3556;
+    --csu-green:     #3C8364;
+    --csu-blue:      #4967A8;
+    --csu-pink:      #E9CECA;
+    --csu-brown-lt:  #C7B8A0;
+    --white:         #FFFFFF;
+    --grey-50:       #FAFBFC;
+    --grey-100:      #F4F6F8;
+    --grey-200:      #E7EAEE;
+    --grey-300:      #D7DBE2;
+    --grey-400:      #AAB0BB;
+    --grey-600:      #5B6473;
+    --grey-700:      #3A414E;
+
+    --radius-sm: 7px;
+    --radius:    11px;
+    --radius-lg: 16px;
+
+    /* Soft UI Evolution — softer than flat, clear depth */
+    --shadow-sm: 0 1px 2px rgba(34,41,68,.07), 0 1px 3px rgba(34,41,68,.08);
+    --shadow-md: 0 4px 14px rgba(34,41,68,.10), 0 2px 6px rgba(34,41,68,.07);
+    --shadow-lg: 0 12px 34px rgba(34,41,68,.16);
+    --ring:      0 0 0 3px rgba(240,87,42,.30);
+
+    --dur:   .22s;
+    --dur-2: .34s;
+    --ease:  cubic-bezier(.22,.61,.36,1);
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 15px;
+    color: var(--csu-charcoal);
+    background: var(--grey-100);
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow: hidden;
+  }
+  a { color: var(--csu-blue); }
+  ::selection { background: rgba(240,87,42,.22); }
+  .sr-only {
+    position: absolute !important; width: 1px !important; height: 1px !important;
+    padding: 0 !important; margin: -1px !important; overflow: hidden !important;
+    clip: rect(0,0,0,0) !important; white-space: nowrap !important; border: 0 !important;
+  }
+  .skip-link {
+    position: fixed; top: 8px; left: 8px; z-index: 10000;
+    background: var(--white); color: var(--csu-navy); border: 2px solid var(--csu-orange-dk);
+    border-radius: var(--radius-sm); padding: 10px 14px; font-weight: 700;
+    transform: translateY(-150%); transition: transform .15s ease;
+  }
+  .skip-link:focus { transform: translateY(0); }
+
+  /* ── Header ── */
+  header {
+    background: var(--csu-navy);
+    color: var(--white);
+    padding: 0 20px;
+    display: flex; align-items: center; justify-content: space-between;
+    height: 56px; flex-shrink: 0;
+    box-shadow: 0 2px 6px rgba(0,0,0,.22);
+    z-index: 100;
+  }
+  .header-brand { display: flex; align-items: center; gap: 12px; }
+  .header-crest { width: 38px; height: 38px; flex-shrink: 0; display: block; filter: brightness(0) invert(1); }
+  .header-wordmark { line-height: 1.2; }
+  .header-wordmark strong { display: block; font-size: 14px; letter-spacing: .02em; }
+  .header-wordmark span  { font-size: 11px; color: var(--csu-brown-lt); letter-spacing: .04em; }
+  .header-tag { font-size: 12px; color: var(--csu-pink); text-align: right; line-height: 1.4; }
+  .accent-bar { height: 4px; background: var(--csu-orange); flex-shrink: 0; }
+
+  /* ── Chip / status bar (pinned) ── */
+  #chipBar {
+    display: none;
+    flex-shrink: 0;
+    background: var(--white);
+    border-bottom: 1px solid var(--grey-200);
+    box-shadow: var(--shadow-sm);
+    padding: 9px 16px;
+    z-index: 90;
+  }
+  #chipBar.show { display: block; }
+  .chipbar-inner {
+    max-width: 1320px; margin: 0 auto;
+    display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  }
+  .live-count {
+    font-size: 13px; color: var(--grey-600); white-space: nowrap;
+    display: flex; align-items: baseline; gap: 5px;
+  }
+  .live-count b { font-size: 16px; color: var(--csu-navy); font-variant-numeric: tabular-nums; }
+  .chips { display: flex; gap: 7px; flex-wrap: wrap; flex: 1; min-width: 120px; }
+  .chip {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: var(--grey-100); border: 1px solid var(--grey-300);
+    color: var(--csu-navy); border-radius: 999px;
+    padding: 4px 6px 4px 11px; font-size: 12px; white-space: nowrap;
+    animation: chip-pop var(--dur) var(--ease) both;
+  }
+  .chip .k { color: var(--grey-600); }
+  .chip button {
+    border: none; background: var(--grey-300); color: var(--csu-navy);
+    width: 24px; height: 24px; border-radius: 50%; cursor: pointer;
+    font-size: 12px; line-height: 1; display: flex; align-items: center; justify-content: center;
+    transition: background var(--dur) var(--ease), color var(--dur) var(--ease);
+  }
+  .chip button:hover { background: var(--csu-orange-dk); color: #fff; }
+  .chipbar-actions { display: flex; gap: 8px; align-items: center; }
+  .btn {
+    font-family: inherit; font-size: 13px; cursor: pointer;
+    border-radius: var(--radius-sm); padding: 7px 13px;
+    border: 1px solid var(--grey-300); background: var(--white); color: var(--csu-navy);
+    transition: border-color var(--dur) var(--ease), background var(--dur) var(--ease), color var(--dur) var(--ease), box-shadow var(--dur) var(--ease), transform var(--dur) var(--ease);
+    white-space: nowrap; display: inline-flex; align-items: center; gap: 6px;
+  }
+  .btn:hover { border-color: var(--csu-navy); }
+  .btn:active { transform: translateY(1px); }
+  .btn-primary { background: var(--csu-orange-dk); border-color: var(--csu-orange-dk); color: #fff; font-weight: 700; }
+  .btn-primary:hover { background: var(--csu-orange-dk); border-color: var(--csu-orange-dk); }
+  .btn-ghost { background: transparent; }
+  .btn-sm { padding: 5px 10px; font-size: 12px; }
+  button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible,
+  [tabindex]:not([tabindex="-1"]):focus-visible {
+    outline: 3px solid var(--csu-orange-dk); outline-offset: 2px;
+    box-shadow: 0 0 0 5px var(--white);
+  }
+
+  /* ── Stage (the single scroll region) ── */
+  #stage { flex: 1; overflow: auto; -webkit-overflow-scrolling: touch; }
+  .wrap { max-width: 1320px; margin: 0 auto; padding: 22px 16px 40px; }
+  .surface { display: none; }
+  .surface.active { display: block; animation: fade-rise var(--dur-2) var(--ease) both; }
+
+  /* ── Entry: dark hero band ── */
+  /* ── Entry: full-width hero band ── */
+  .entry-hero-band {
+    background: var(--csu-navy);
+    background-image:
+      radial-gradient(ellipse at 75% 50%, rgba(90,107,188,.25) 0%, transparent 60%),
+      radial-gradient(ellipse at 25% 80%, rgba(240,87,42,.08) 0%, transparent 50%);
+    padding: 60px 24px 56px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .entry-hero-band::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, transparent, var(--csu-orange), transparent);
+  }
+  .entry-hero { text-align: center; padding: 0; max-width: 760px; margin: 0 auto; }
+  .entry-hero h1 {
+    font-size: clamp(28px, 4vw, 46px);
+    font-weight: 800; color: var(--white);
+    letter-spacing: -.02em; line-height: 1.1;
+  }
+  .entry-hero h1 .orange { color: var(--csu-orange); }
+  .entry-hero p {
+    font-size: 16px; color: var(--csu-brown-lt);
+    margin: 16px auto 0; line-height: 1.6; max-width: 520px;
+  }
+  .data-freshness {
+    display: inline-block; margin-top: 12px; color: var(--white);
+    font-size: 12px; line-height: 1.5;
+  }
+  .data-freshness a { color: var(--white); text-underline-offset: 2px; }
+
+  /* ── Choice cards (below the band) ── */
+  .intent-or { display: none; }
+  .entry-choices {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+    max-width: 800px;
+    margin: -28px auto 0;
+    padding: 0 24px;
+    position: relative;
+    z-index: 2;
+  }
+  .intent-card {
+    background: #fff;
+    border: 2px solid var(--grey-100);
+    border-radius: 14px;
+    padding: 28px 26px 24px;
+    cursor: pointer; font-family: inherit;
+    box-shadow: 0 4px 24px rgba(0,0,0,.10), 0 1px 4px rgba(0,0,0,.06);
+    transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease;
+    display: flex; flex-direction: column; gap: 0;
+    position: relative; text-align: left;
+  }
+  .intent-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 32px rgba(0,0,0,.14), 0 2px 6px rgba(0,0,0,.06);
+    border-color: var(--csu-orange);
+  }
+  .intent-card.is-selected { border-color: var(--csu-orange); }
+  .intent-card .selected-pill { display: none; }
+  .intent-ic {
+    width: 48px; height: 48px; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; margin-bottom: 16px;
+    background: var(--csu-navy) !important;
+  }
+  .intent-card.is-selected .intent-ic { background: var(--csu-green) !important; }
+  .intent-ic svg { width: 24px; height: 24px; }
+  .intent-card h2 {
+    font-size: 18px; font-weight: 700;
+    color: var(--csu-navy); margin-bottom: 6px;
+  }
+  .intent-card > p {
+    font-size: 13.5px; color: var(--grey-600);
+    line-height: 1.5; margin-bottom: 20px;
+  }
+  .intent-card .go { display: none; }
+
+  /* ── Inline search inside each choice card ── */
+  .intent-search-wrap {
+    display: flex; gap: 0; border-radius: 8px; overflow: hidden;
+    border: 1.5px solid var(--grey-200);
+    background: var(--grey-100);
+    transition: border-color .15s, box-shadow .15s;
+    margin-top: auto;
+  }
+  .intent-search-wrap:focus-within {
+    border-color: var(--csu-orange);
+    box-shadow: 0 0 0 3px rgba(240,87,42,.12);
+    background: #fff;
+  }
+  .intent-search-wrap input {
+    flex: 1; border: none; outline: none; background: transparent;
+    font-family: inherit; font-size: 14px;
+    padding: 11px 14px; color: var(--csu-charcoal); min-width: 0;
+  }
+  .intent-search-wrap input::placeholder { color: var(--grey-400); }
+  .intent-search-wrap button {
+    background: var(--csu-orange-dk); color: #fff;
+    border: none; padding: 10px 16px;
+    cursor: pointer; font-family: inherit; font-size: 13px; font-weight: 700;
+    white-space: nowrap;
+    transition: background .15s;
+  }
+  .intent-search-wrap button:hover { background: var(--csu-orange-dk); }
+  .intent-search-hint {
+    font-size: 11px; color: var(--grey-600);
+    margin-top: 6px; min-height: 16px; padding: 0 2px;
+  }
+  .intent-search-hint b { color: var(--csu-navy); }
+
+  /* Search-wrap still used in wizard/advanced — keep but override for entry cards */
+  .search-wrap {
+    display: flex; border-radius: var(--radius);
+    background: #fff; border: 1px solid var(--grey-300);
+    transition: box-shadow var(--dur) var(--ease), border-color var(--dur) var(--ease);
+  }
+  .search-wrap:focus-within { border-color: var(--csu-orange); box-shadow: 0 0 0 3px rgba(240,87,42,.12); }
+  .search-wrap svg { width: 20px; height: 20px; color: var(--grey-400); align-self: center; margin-left: 16px; flex-shrink: 0; }
+  .search-wrap input {
+    flex: 1; border: none; outline: none; background: transparent;
+    font-family: inherit; font-size: 15px; padding: 14px 12px; color: var(--csu-charcoal); min-width: 0;
+  }
+  .search-wrap input::placeholder { color: var(--grey-400); }
+  .search-wrap .btn-primary { margin: 6px; border-radius: var(--radius); }
+  .search-hint { font-size: 12.5px; color: var(--grey-600); min-height: 18px; margin-top: 8px; }
+
+  .entry-foot { text-align: center; margin-top: 28px; font-size: 13px; color: var(--grey-600); }
+  .linkbtn { background: none; border: none; color: var(--csu-blue); font-family: inherit; font-size: inherit; cursor: pointer; text-decoration: underline; padding: 0; }
+
+  /* Mobile */
+  #entryBandOuter { display: none; }
+  #entryBandOuter.active { display: block; }
+  @media (max-width: 600px) {
+    .entry-choices { grid-template-columns: 1fr; margin-top: -20px; padding: 0 16px; }
+    .entry-hero-band { padding: 40px 20px 44px; }
+  }
+
+  /* ── Wizard ── */
+  .panel { background: #fff; border: 1px solid var(--grey-200); border-radius: var(--radius); box-shadow: var(--shadow-md); }
+  .wizard-card { max-width: 720px; margin: 6px auto 0; }
+  .wizard-top { display: flex; align-items: center; justify-content: space-between; padding: 14px 20px; border-bottom: 1px solid var(--grey-200); }
+  .progress { display: flex; align-items: center; gap: 9px; }
+  .progress .dots { display: flex; gap: 5px; }
+  .progress .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--grey-300); transition: background var(--dur) var(--ease), transform var(--dur) var(--ease); }
+  .progress .dot.done { background: var(--csu-green); }
+  .progress .dot.cur { background: var(--csu-orange); transform: scale(1.35); }
+  .progress .lbl { font-size: 12px; color: var(--grey-600); font-weight: 700; letter-spacing: .03em; }
+  .wizard-running { font-size: 13px; color: var(--grey-600); }
+  .wizard-running b { color: var(--csu-navy); font-size: 15px; font-variant-numeric: tabular-nums; }
+  .step { padding: 22px 20px; }
+  .step.enter { animation: step-in var(--dur-2) var(--ease) both; }
+  .step h2 { font-size: 19px; color: var(--csu-navy); margin-bottom: 4px; }
+  .step .sub { font-size: 13px; color: var(--grey-600); margin-bottom: 16px; }
+  .opts { display: flex; flex-direction: column; gap: 9px; }
+  .opts.grid { flex-direction: row; flex-wrap: wrap; }
+  .opt {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    background: var(--grey-50); border: 1.5px solid var(--grey-200); border-radius: var(--radius-sm);
+    padding: 13px 15px; cursor: pointer; font-family: inherit; font-size: 14.5px; color: var(--csu-charcoal);
+    text-align: left; width: 100%;
+    transition: border-color var(--dur) var(--ease), background var(--dur) var(--ease), box-shadow var(--dur) var(--ease), transform var(--dur) var(--ease);
+    animation: chip-pop var(--dur) var(--ease) both; animation-delay: calc(var(--i,0) * 32ms);
+  }
+  .opts.grid .opt { width: auto; min-width: 120px; flex: 1; }
+  .opt:hover:not(:disabled) { border-color: var(--csu-brown-lt); background: #fff; transform: translateY(-1px); box-shadow: var(--shadow-sm); }
+  .opt .ov { display: flex; align-items: center; gap: 10px; }
+  .opt .cnt { font-size: 12.5px; color: var(--grey-600); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .opt[aria-checked="true"] { border-color: var(--csu-orange); background: #FFF6F3; box-shadow: var(--ring); }
+  .opt[aria-checked="true"] .cnt { color: var(--csu-orange-dk); }
+  .opt:disabled { opacity: .42; cursor: not-allowed; }
+  .opt .tick { width: 18px; height: 18px; border-radius: 50%; border: 1.5px solid var(--grey-400); display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .opt[aria-checked="true"] .tick { border-color: var(--csu-orange); background: var(--csu-orange); }
+  .opt[aria-checked="true"] .tick::after { content: ''; width: 7px; height: 7px; border-radius: 50%; background: #fff; }
+
+  .catalog-search { width: 100%; padding: 11px 13px; font-family: inherit; font-size: 14px; border: 1.5px solid var(--grey-300); border-radius: var(--radius-sm); outline: none; margin-bottom: 10px; transition: border-color var(--dur) var(--ease); }
+  .catalog-search:focus { border-color: var(--csu-orange); }
+  .catalog-list { max-height: 230px; overflow: auto; display: flex; flex-direction: column; gap: 6px; padding-right: 2px; }
+  .kw-input { width: 100%; padding: 15px 16px; font-family: inherit; font-size: 16px; border: 1.5px solid var(--grey-300); border-radius: var(--radius-sm); outline: none; transition: border-color var(--dur) var(--ease), box-shadow var(--dur) var(--ease); }
+  .kw-input:focus { border-color: var(--csu-orange); box-shadow: var(--ring); }
+
+  .wizard-nav { display: flex; align-items: center; justify-content: space-between; padding: 14px 20px; border-top: 1px solid var(--grey-200); gap: 10px; }
+  .wizard-nav .right { display: flex; gap: 9px; }
+
+  /* ── Advanced panel ── */
+  .adv { margin-bottom: 16px; padding: 16px 18px; }
+  .adv-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: var(--grey-600); margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; }
+  .adv.collapsed .adv-keyword, .adv.collapsed .adv-row { display: none; }
+  .adv.collapsed .adv-title { margin-bottom: 0; }
+  .adv.collapsed { padding-bottom: 10px; }
+  .adv-keyword { display: flex; gap: 8px; margin-bottom: 14px; }
+  .adv-keyword input { flex: 1; padding: 10px 14px; font-size: 14px; font-family: inherit; border: 1px solid var(--grey-300); border-radius: var(--radius-sm); outline: none; transition: border-color var(--dur) var(--ease); }
+  .adv-keyword input:focus { border-color: var(--csu-orange); }
+  .adv-row { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; }
+  .fg { display: flex; flex-direction: column; gap: 4px; }
+  .fg label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--grey-600); }
+  .fg select {
+    padding: 8px 30px 8px 11px; font-family: inherit; font-size: 13px;
+    border: 1px solid var(--grey-300); border-radius: var(--radius-sm); background: #fff; cursor: pointer;
+    appearance: none; min-width: 162px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%235B6473' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 11px center;
+    transition: border-color var(--dur) var(--ease);
+  }
+  .fg select:focus { border-color: var(--csu-orange); }
+
+  /* ── Loosen / empty-state panel ── */
+  .loosen { margin-bottom: 16px; padding: 18px 20px; border: 1px solid #F3D9C9; background: #FFF8F4; border-radius: var(--radius); }
+  .loosen h3 { font-size: 15px; color: var(--csu-orange-dk); display: flex; align-items: center; gap: 8px; }
+  .loosen p { font-size: 13px; color: var(--grey-700); margin: 5px 0 13px; }
+  .loosen-opts { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; }
+  .loosen-opt { display: flex; align-items: center; gap: 10px; font-size: 14px; color: var(--csu-charcoal); cursor: pointer; }
+  .loosen-opt input { width: 17px; height: 17px; accent-color: var(--csu-orange); cursor: pointer; }
+  .loosen-opt .gain { color: var(--csu-green); font-weight: 700; font-variant-numeric: tabular-nums; margin-left: auto; }
+  .loosen-actions { display: flex; gap: 9px; }
+
+
+
+  /* ── Rank hero (Check mode) ── */
+  .jcard-check { border-top: 3px solid var(--csu-orange); }
+  .rank-hero { display: flex; gap: 16px; margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px solid var(--grey-100); }
+  .rank-hero-item { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+  .rank-hero-lbl { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--grey-600); }
+  .rank-hero .badge { font-size: 15px; padding: 4px 12px; border-radius: 6px; }
+
+  .explore-note { background: var(--grey-100); border: 1px solid var(--grey-200); border-radius: var(--radius); padding: 10px 14px; font-size: 12.5px; color: var(--grey-600); margin-bottom: 12px; }
+  .explore-note a { color: var(--csu-blue); }
+
+
+  /* ── Key drawer grid ── */
+  .key-grid {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 10px 14px;
+    align-items: start;
+    margin-top: 10px;
+  }
+  .key-desc {
+    font-size: 12.5px;
+    color: var(--grey-700, #444);
+    line-height: 1.5;
+    padding-top: 2px;
+  }
+  /* ── Journal Type + Cap warning badges ── */
+  .b-fully-oa  { background: #FDF3D0; color: #7A5900; }
+  .b-hybrid    { background: #F0EBF8; color: #6B3FA0; }
+  .b-sub       { background: var(--grey-200); color: var(--grey-600); }
+  .b-cap       { background: #FFF3CD; color: #856404; border: 1px solid #FFCA2C; }
+  .b-cap-reached { background: #FDDEDE; color: #8B1A1A; border: 1px solid #F5C2C7; }
+  .cap-detail {
+    font-size: 11.5px; line-height: 1.5;
+    background: #FFF8E6; border: 1px solid #FFCA2C; border-radius: 6px;
+    padding: 8px 11px; margin-top: 8px; color: #5a4000;
+  }
+  .cap-detail a { color: #856404; font-weight: 600; }
+  /* ── Find Similar ── */
+  .similar-banner {
+    background: linear-gradient(135deg, var(--csu-navy) 0%, #2d3561 100%);
+    border-radius: var(--radius);
+    padding: 14px 18px;
+    margin-bottom: 14px;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .similar-banner-text { color: var(--white); }
+  .similar-banner-text strong { display: block; font-size: 14px; margin-bottom: 3px; }
+  .similar-banner-text span { font-size: 12px; color: var(--csu-brown-lt); line-height: 1.5; }
+  .similar-banner-actions { display: flex; gap: 8px; align-items: center; flex-shrink: 0; }
+  .btn-similar {
+    background: none; border: 1.5px solid var(--csu-blue);
+    color: var(--csu-blue); border-radius: var(--radius);
+    padding: 5px 12px; font-size: 12px; font-weight: 600;
+    cursor: pointer; font-family: inherit;
+    transition: background .15s, color .15s;
+    white-space: nowrap;
+  }
+  .btn-similar:hover { background: var(--csu-blue); color: #fff; }
+  .no-for-msg {
+    background: var(--grey-100); border: 1px solid var(--grey-200);
+    border-radius: var(--radius); padding: 24px; text-align: center;
+    color: var(--grey-600); font-size: 14px; margin: 12px 0;
+  }
+  .no-for-msg strong { display: block; margin-bottom: 6px; color: var(--csu-charcoal); }
+  /* ── Results: summary + cards ── */
+  .results-head { display: flex; align-items: flex-end; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-bottom: 14px; }
+  .results-head h2 { font-size: 21px; color: var(--csu-navy); }
+  .results-head h2 b { color: var(--csu-orange); font-variant-numeric: tabular-nums; }
+  .results-head .sub { font-size: 13px; color: var(--grey-600); margin-top: 2px; }
+  .results-tools { display: flex; gap: 8px; flex-wrap: wrap; }
+  .seg { display: inline-flex; background: var(--grey-100); border: 1px solid var(--grey-200); border-radius: var(--radius-sm); overflow: hidden; }
+  .seg button { border: none; background: transparent; font-family: inherit; font-size: 12.5px; padding: 7px 13px; cursor: pointer; color: var(--grey-600); }
+  .seg button.on { background: #fff; color: var(--csu-navy); font-weight: 700; box-shadow: var(--shadow-sm); }
+
+  .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 310px), 1fr)); gap: 13px; }
+  .jcard {
+    background: #fff; border: 1px solid var(--grey-200); border-radius: var(--radius); box-shadow: var(--shadow-sm);
+    padding: 15px 16px; display: flex; flex-direction: column; gap: 9px;
+    animation: chip-pop var(--dur) var(--ease) both; animation-delay: calc(var(--i,0) * 36ms);
+    transition: box-shadow var(--dur) var(--ease), transform var(--dur) var(--ease);
+  }
+  .jcard:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); }
+  .jcard h3 { font-size: 15px; color: var(--csu-navy); line-height: 1.3; }
+  .jcard .meta { font-size: 12px; color: var(--grey-600); }
+  .jcard .badges { display: flex; flex-wrap: wrap; gap: 6px; }
+  .jcard .crow { display: flex; flex-wrap: wrap; gap: 5px 14px; font-size: 12px; color: var(--grey-700); }
+  .jcard .crow span b { color: var(--csu-navy); }
+  .jcard-link a { color: var(--csu-blue); font-size: 12px; text-decoration: none; }
+  .jcard-link a:hover { text-decoration: underline; }
+  .jcard .cardfoot { display: flex; justify-content: flex-end; align-items: center; margin-top: 2px; padding-top: 9px; border-top: 1px solid var(--grey-100); }
+
+  /* ── Badges ── */
+
+  .b-disc { background: #fff3cd; color: #856404; border: 1px solid #ffc107; }
+  .badge { display: inline-block; padding: 2px 9px; border-radius: 999px; font-size: 11px; font-weight: 700; line-height: 1.5; }
+  .b-yes { background: #FEF0EB; color: #8B3A10; }
+  .b-no { background: #FDDEDE; color: #8B1A1A; }
+  .b-na { background: var(--grey-200); color: var(--grey-600); }
+  .b-q1 { background: #187A46; color: #fff; }
+  .b-q2 { background: #f1c40f; color: #333; }
+  .b-q3 { background: #9C4600; color: #fff; }
+  .b-q4 { background: #B42318; color: #fff; }
+  .b-diamond { background: #E8F4FD; color: #1565A0; }
+  .b-lbl { font-size: 10px; color: inherit; opacity: .9; text-transform: uppercase; letter-spacing: .04em; margin-right: 3px; }
+  .dash { color: var(--grey-600); }
+
+  /* ── Table ── */
+  .table-wrap { background: #fff; border: 1px solid var(--grey-200); border-radius: var(--radius); box-shadow: var(--shadow-md); overflow: hidden; }
+  .table-scroll { overflow: auto; }
+  table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 13px; }
+  /* ── Bulletproof sticky header: separate borders + sticky on opaque TH ── */
+  thead th {
+    position: sticky; top: 0; z-index: 3;
+    background: var(--csu-navy); color: #fff;
+    padding: 11px 12px; text-align: left; font-weight: 700; font-size: 10px;
+    letter-spacing: .05em; text-transform: uppercase; white-space: nowrap;
+    cursor: pointer; user-select: none;
+    box-shadow: inset 0 -1px 0 rgba(255,255,255,.16);
+  }
+  thead th:hover { background: var(--csu-navy-2); }
+  th .si { margin-left: 4px; opacity: .5; font-style: normal; font-size: 9px; }
+  th[aria-sort="ascending"] .si::after { content: '▲'; opacity: 1; }
+  th[aria-sort="descending"] .si::after { content: '▼'; opacity: 1; }
+  th[aria-sort="none"] .si::after, th:not([aria-sort]) .si::after { content: '⇅'; }
+  tbody tr { transition: background .1s; }
+  tbody tr:hover { background: #FFF8F6; }
+  tbody td { padding: 9px 12px; vertical-align: top; line-height: 1.45; border-bottom: 1px solid var(--grey-200); }
+  tbody tr:last-child td { border-bottom: none; }
+  td.title-cell { font-weight: 600; min-width: 200px; max-width: 300px; color: var(--csu-navy); }
+  td.pub { min-width: 120px; max-width: 180px; }
+  td.agr { min-width: 110px; max-width: 170px; color: var(--grey-700); }
+  td.ctr { text-align: center; white-space: nowrap; }
+  td.for { max-width: 130px; font-size: 12px; color: var(--grey-600); font-variant-numeric: tabular-nums; }
+  td.issn { font-size: 11px; color: var(--grey-600); min-width: 150px; font-variant-numeric: tabular-nums; }
+  td .rowcopy { opacity: 1; border: none; background: var(--grey-100); border-radius: 5px; cursor: pointer; font-size: 11px; min-width: 28px; min-height: 28px; padding: 4px 8px; color: var(--grey-600); transition: background var(--dur) var(--ease); }
+  td .rowcopy:hover { background: var(--csu-orange-dk); color: #fff; }
+  #tableBody.fade { opacity: .35; transition: opacity .12s; }
+
+  .pagination { display: flex; align-items: center; justify-content: center; gap: 5px; padding: 13px; border-top: 1px solid var(--grey-200); flex-wrap: wrap; }
+  .pg { min-width: 32px; height: 32px; padding: 0 7px; border: 1px solid var(--grey-200); background: #fff; border-radius: var(--radius-sm); cursor: pointer; font-family: inherit; font-size: 12px; color: var(--csu-charcoal); display: flex; align-items: center; justify-content: center; transition: border-color var(--dur) var(--ease), color var(--dur) var(--ease), background var(--dur) var(--ease); }
+  .pg:hover:not(:disabled) { border-color: var(--csu-orange-dk); color: var(--csu-orange-dk); }
+  .pg.active { background: var(--csu-orange-dk); color: #fff; border-color: var(--csu-orange-dk); }
+  .pg:disabled { opacity: .35; cursor: default; }
+
+  /* ── Empty / loading ── */
+  .empty { text-align: center; padding: 44px 24px; color: var(--grey-600); }
+  .empty .ic { font-size: 30px; }
+  .skeleton { max-width: 760px; margin: 30px auto; }
+  .sk { background: linear-gradient(90deg, var(--grey-200) 25%, var(--grey-100) 37%, var(--grey-200) 63%); background-size: 400% 100%; animation: sk 1.3s ease infinite; border-radius: var(--radius-sm); }
+  .sk-row { height: 54px; margin-bottom: 12px; }
+  .sk-search { height: 58px; border-radius: var(--radius-lg); margin-bottom: 22px; }
+
+  /* ── Footer ── */
+  footer { background: var(--csu-charcoal); color: var(--grey-400); font-size: 12px; line-height: 1.6; flex-shrink: 0; margin-top: 32px; padding: 0; }
+  footer a { color: var(--csu-brown-lt); }
+  footer a:hover { color: var(--white); }
+  /* footer-about removed — content moved to drawer */
+  .footer-about summary { padding: 14px 24px; cursor: pointer; font-size: 13px; font-weight: 600; color: var(--csu-brown-lt); letter-spacing: .02em; list-style: none; display: flex; align-items: center; gap: 8px; user-select: none; transition: color .15s; }
+  .footer-about summary::-webkit-details-marker { display: none; }
+  .footer-about summary::before { content: '›'; font-size: 16px; transition: transform .2s; display: inline-block; }
+  .footer-about[open] summary::before { transform: rotate(90deg); }
+  .footer-about summary:hover { color: var(--white); }
+  .footer-about-body { padding: 4px 24px 28px; color: var(--grey-400); max-width: 860px; }
+  .footer-about-body h3 { font-size: 15px; font-weight: 700; color: var(--white); margin-bottom: 12px; margin-top: 4px; }
+  .footer-about-body h4 { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--csu-brown-lt); margin: 18px 0 6px; }
+  .footer-about-body p { margin-bottom: 8px; line-height: 1.65; }
+  .footer-about-body ul { margin: 0 0 8px 18px; }
+  .footer-about-body li { margin-bottom: 6px; line-height: 1.6; }
+  .footer-about-body strong { color: var(--white); }
+  .footer-legal { padding: 12px 24px; font-size: 11px; color: var(--grey-400); }
+  .footer-about-link { background:none; border:none; color:var(--csu-brown-lt); font-size:11px; cursor:pointer; padding:0; text-decoration:underline; font-family:inherit; }
+  footer a { color: var(--csu-brown-lt); }
+
+  /* ── Toast ── */
+  #toast { position: fixed; left: 50%; bottom: 22px; transform: translateX(-50%) translateY(14px); background: var(--csu-navy); color: #fff; padding: 10px 18px; border-radius: 999px; font-size: 13px; box-shadow: var(--shadow-lg); opacity: 0; pointer-events: none; transition: opacity var(--dur) var(--ease), transform var(--dur) var(--ease); z-index: 1000; }
+  #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  .publishing-reminder {
+    display: grid; grid-template-columns: auto 1fr; gap: 10px; align-items: start;
+    background: #FFF8E1; border: 1px solid #C58A00; border-left: 4px solid #8A5F00;
+    border-radius: var(--radius); padding: 12px 14px; margin: 0 0 14px;
+    color: var(--csu-charcoal); font-size: 13px; line-height: 1.55;
+  }
+  .publishing-reminder strong { color: var(--csu-navy); }
+  .publishing-reminder .reminder-icon { font-size: 18px; line-height: 1.3; }
+  .publishing-terms {
+    margin: -6px 0 14px; color: var(--grey-600); font-size: 12px; line-height: 1.55;
+  }
+
+  /* ── Animations ── */
+  @keyframes fade-rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+  @keyframes step-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+  @keyframes chip-pop { from { opacity: 0; transform: scale(.96); } to { opacity: 1; transform: none; } }
+  @keyframes sk { 0% { background-position: 100% 0; } 100% { background-position: -100% 0; } }
+
+  /* ── Responsive ── */
+  @media (max-width: 760px) {
+    .intents { grid-template-columns: 1fr; }
+    .intent-or::before, .intent-or::after { width: calc(50% - 70px); }
+    .header-tag { display: none; }
+    .entry-hero h1 { font-size: 24px; }
+  }
+  @media (max-width: 640px) {
+    .wrap { padding: 16px 12px 32px; }
+    td.issn, td.for, th.col-ISSNs, th.col-FORCodes { display: none; }
+  }
+  @media (max-width: 520px) {
+    header { padding: 0 10px; }
+    .header-brand { gap: 8px; }
+    .header-crest { width: 30px; height: 30px; }
+    .header-wordmark strong { font-size: 12px; }
+    .header-wordmark span { display: none; }
+    .header-right { gap: 6px; }
+    .btn-about-trigger { padding: 4px 7px; font-size: 11px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; scroll-behavior: auto !important; }
+  }
+  @media (forced-colors: active) {
+    .badge, .publishing-reminder, .intent-card, .panel { border: 1px solid CanvasText; }
+    .skip-link { border: 2px solid CanvasText; }
+  }
+
+  /* ── Heading animation: drift-in (Option 4) + magnetic (Option 3 desktop) ── */
+  .entry-hero h1 {
+    position: relative;
+  }
+  .entry-hero h1 .aw {
+    display: inline-block;
+    opacity: 0;
+    margin-right: 0.22em;
+    /* transition set by JS after delay so stagger works */
+    will-change: transform, opacity;
+    cursor: default;
+  }
+  .entry-hero h1 .aw.drifted {
+    opacity: 1;
+    transform: translate(0, 0) !important;
+  }
+  /* Magnetic hover transition (desktop only — added by JS) */
+  .entry-hero h1 .aw.magnetic {
+    transition: transform 0.18s cubic-bezier(0.23, 1, 0.32, 1);
+  }
+  /* Snap-back after drift-in is complete */
+  .entry-hero h1 .aw.snap {
+    transition: transform 0.45s cubic-bezier(0.23, 1, 0.32, 1), opacity 0.45s ease;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .entry-hero h1 .aw {
+      opacity: 1 !important;
+      transform: none !important;
+      transition: none !important;
+    }
+  }
+
+  /* ── About & Help Drawer ── */
+  .header-right { display: flex; align-items: center; gap: 14px; }
+  .header-tag { font-size: 12px; color: var(--csu-pink); text-align: right; line-height: 1.4; }
+  .btn-about-trigger {
+    background: transparent; border: 1px solid rgba(255,255,255,.3);
+    color: var(--white); border-radius: var(--radius);
+    padding: 5px 12px; font-size: 12px; font-weight: 600;
+    cursor: pointer; font-family: inherit;
+    transition: background .15s, border-color .15s;
+    white-space: nowrap;
+  }
+  .btn-about-trigger:hover { background: rgba(255,255,255,.12); border-color: rgba(255,255,255,.5); }
+  .about-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,.45);
+    z-index: 200; backdrop-filter: blur(2px);
+    animation: fadeIn .2s ease;
+  }
+  .about-drawer {
+    position: fixed; top: 0; right: 0; bottom: 0; width: min(480px, 100vw);
+    background: var(--white); z-index: 201; display: flex; flex-direction: column;
+    box-shadow: -4px 0 24px rgba(0,0,0,.18);
+    animation: slideIn .25s cubic-bezier(0.32, 0.72, 0, 1);
+  }
+  @keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
+  @keyframes fadeIn  { from { opacity: 0; } to { opacity: 1; } }
+  .about-drawer[hidden], .about-overlay[hidden] { display: none; }
+  .about-drawer-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 18px 22px 16px; border-bottom: 1px solid var(--grey-200);
+    background: var(--csu-navy); color: var(--white); flex-shrink: 0;
+  }
+  .about-drawer-header h2 { font-size: 17px; font-weight: 700; }
+  .about-close {
+    background: none; border: none; color: var(--white); font-size: 18px;
+    cursor: pointer; padding: 4px 8px; border-radius: var(--radius);
+    line-height: 1; transition: background .12s;
+  }
+  .about-close:hover { background: rgba(255,255,255,.15); }
+  .about-drawer-body { overflow-y: auto; padding: 22px; flex: 1; }
+  .about-section { margin-bottom: 26px; padding-bottom: 26px; border-bottom: 1px solid var(--grey-100); }
+  .about-section:last-child { border-bottom: none; margin-bottom: 0; }
+  .about-section h3 { font-size: 15px; font-weight: 700; color: var(--csu-navy); margin-bottom: 10px; }
+  .about-section h4 { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--grey-600); margin: 14px 0 5px; }
+  .about-section p { font-size: 13px; line-height: 1.65; color: var(--grey-700); margin-bottom: 8px; }
+  .about-section ul { margin: 0 0 8px 16px; }
+  .about-section li { font-size: 13px; line-height: 1.6; color: var(--grey-700); margin-bottom: 8px; }
+  .about-section a { color: var(--csu-blue); }
+  .about-section strong { color: var(--csu-charcoal); }
+  @media (prefers-reduced-motion: reduce) {
+    .about-drawer, .about-overlay { animation: none; }
+  }
+
+</style>
+</head>
+<body>
+
+<a class="skip-link" href="#stage">Skip to main content</a>
+
+<header>
+  <div class="header-brand">
+    <img class="header-crest" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADoAAAA/CAYAAACxdtubAAAGmElEQVR42u1bLXejTBS+s2dt5w9k1FaBWzVRjcm41iQyJjhqqItCsmKRMYsD01VLTCQ1qA1qHaiokh+w5AfMazJzhpQQyEc372nmnJy2pAw8c5/73I8BxDmHjzA+wQcZV6BXoFeglz0+7/ri9vb2fynHy+USXan7oanbhA6XMnq9Hs/z/GrRxhZVR1EUR10QY3zQ9dqedxTQoijg69evB6kxpRQMwwDGWKUbpGnKkySB1WoFSZKAoOL2wuq6DpqmgWVZQAhBZ7NoW+tpmga2bYOu629uarFY8JeXFwjDsDFT0jSFNE1hPB6fl7r7hq7r0Ol0gDEGjDG0TbmiKMD3ff7y8gJpml6mj2KMYblcojzPeZZl8vjNzQ1gjIEQgnb5Up7nPAiCWuthjIFSCpqmga7rcl4xVquVtGpbnz3IooQQRAhp5NNpmvIgCCBJkkqAlFKglAJjrJLe22wBAGCMnV91m4JLkgR20XOf7/5z6qqqSwiBTqcjv1uv15Dnea2oYIxhPB7DcDisVMyiKCBJEp6mKSRJAuv1Wh7HGEOn05E/DcNAbeh7sEXzPId92YhKT8YYDIfDSnEKw5DPZrO9C6WygzHG27DhbOFF13Xo9/s7fe+Q0PKuqhvHMWRZBkVRSIuu12upkBvFrKSV8N9v377tDC3KHG9UVyxIkiTnF6OmilsVOwU9q8AxxmAwGOxcpHfPdduAS5KEh2FYG1p2+e4/V92HhweuaZpUP1V1hWCs1+varIdSCpZlQbfb3Zn3rlYryPMcVqtVaZE6nQ7our4zZz6ZRduobVVoqRIn4buz2QyiKGokTvP5/DJUV03pxuNxpe8VRQHT6ZS/h/K2Vl3P8yQthfoKAILOIrGvW/EoiiRATdPOXteiXXsvahfw/9RK+fBdwNY+GkURV9RT+p16XNM0mcsuFgsuFFk9XjVfw3TyoFDUOryYplmpfI7jSDW2bRsMwwAAgNlsBmEYAgCAYRhg23ZpTsYY8n2fT6fTWkESrZhDx0VQ1zAM9OfPH2TbNmxnXZRSmM/n8PPnT1TVsbiI8FI3FosFJ4SUqGwYBjIMA8Iw5FEUgWVZO2Pu9rkXa9Esy6DX64FpmnzbT4fDIfI8D6kgRTk3Go34aDRqHXc/18Wp9yifoiiCKIpA13W+KcpRm4LgpNQVScE5E+80TWEymUAQBHyTKqKmWVMTg3yuKcdkBlQUBccYI3H8mJVV/REAeBAEpfkEYADgdQWB8M+iKCTQuvJxp4/e3NyUEnm1ejil2sZxjDzPq+3siZxZqG+325Xqm+c5b3Jvn/a1FoVwqCt66sEYQ57nofl8DsPhsATQsiwJsCp3Vu9NvefGQFVAautiQ7lTiBAPw5BvLS5yXRfFcQyu60Icx+jp6QmpYUSlqhCzJkaoA4rUyQRFNh35o4HmeQ6TyQR6vd4bwIQQtN11yPOcO47DHx4euApatWhdFfSpzi9UKqgrZ1nWyWgrAN/e3nLHcXhVYrEBCL7vw2AwkOqfJImsWnRdr00gahMGdcdqOp2WAvqxVq063/d9CTiKIm6aJn98fATf92WIU13H9315br/fPzwzYoxJQCIzEd99//79aAHaFh8VgGmab9oqlmWBWi0J7dhegNZAMcYwGAzk347jyN+73S46dt9EFZ+6ygRjLCoipGRLJebtS2b25rqGYZSsOplMTv78ESEE2baNlstlqYKhlIJt2xDHMVItFoZhK2s2AipWU7lI62K5avi+zx3H4WrAV5MIETu3N5MWiwVX9UKl89HVC2MMqZmLaZqQpmnpBlWKtwALvV4PqgBXuUWapvzx8VH6LWOscVxvXKa5rltS2tFoVAL79PSE5vP5QTFWADZN801M3QWSEAKu656+HsUYw/Pzs6TJpmtforGu6yiOY3TIjrTIwLYzH0HX0Wgkc26MMfz48QPOtj9KCEHPz8+lwtc0TTAMg9u2jdT/U2gPWZbt3PkmhAClFPr9/psmd1WDG2MMruu23ynnnLf+vL6+8ru7O/7lyxf5ub+/579+/eJ15/39+7fxNX7//s3v7+9L17i7u+Ovr6/8kHtGh748IEKNmhqKVKyqU9B0ziiKeBAEbxhAKQXP8w5ujqFj35Koa1UyxkDTNKCUQlUzSzS6siyDKIrkFsc2vS3LOrpqQqd6HWQTFxsL2772h9h9a/tQxtmBqoCjKDpo+11Q9Bybw+hcL/gIfxOKKzZ2VYuJGlI8yCiefzjH/aDrm0xXoFegV6CXMP4DvAKzU3fsL/4AAAAASUVORK5CYII=" alt="Charles Sturt University crest">
+    <div class="header-wordmark">
+      <strong>Charles Sturt University</strong>
+      <span>Division of Library Services</span>
+    </div>
+  </div>
+  <div class="header-right">
+    <div class="header-tag">Journal Finder<br>2026 Edition</div>
+    <button class="btn-about-trigger" id="keyTrigger" aria-label="Label key" aria-expanded="false" aria-controls="keyDrawer">Key</button>
+    <button class="btn-about-trigger" id="aboutTrigger" aria-label="About this tool" aria-expanded="false" aria-controls="aboutDrawer">About &amp; Help</button>
+  </div>
+</header>
+<div class="accent-bar"></div>
+
+<!-- Pinned chip / status bar -->
+<div id="chipBar" role="region" aria-label="Active filters and result count">
+  <div class="chipbar-inner">
+    <div class="live-count" aria-live="polite"><b id="liveCount">0</b><span>journals match</span></div>
+    <div class="chips" id="chips"></div>
+    <div class="chipbar-actions">
+      <button class="btn btn-sm btn-ghost" id="clearAllBtn" hidden>Clear all</button>
+      <button class="btn btn-sm btn-ghost" id="startOverBtn" hidden>← Start over</button>
+      <button class="btn btn-sm" id="modeToggle">Show all filters</button>
+    </div>
+  </div>
+</div>
+
+<main id="stage" tabindex="-1">
+  <div class="wrap">
+
+    <!-- Loading skeleton -->
+    <div id="skeleton" class="skeleton" aria-hidden="true">
+      <div class="sk sk-search"></div>
+      <div class="sk sk-row"></div><div class="sk sk-row"></div><div class="sk sk-row"></div>
+    </div>
+    <div id="loadingStatus" class="sr-only" role="status" aria-live="polite">Loading journal data.</div>
+
+    <!-- ENTRY hero band: outside wrap for full-width -->
+    </div><!-- close .wrap -->
+    <div id="entryBandOuter">
+    <section class="surface-hero" id="entryHero">
+      <div class="entry-hero-band">
+        <div class="entry-hero">
+          <h1 id="entryTitle" aria-label="Find the right journal. Publish with confidence.">
+            <span class="aw">Find</span>
+            <span class="aw">the</span>
+            <span class="aw">right</span>
+            <span class="aw"><span class="orange">journal</span>.</span>
+            <span class="aw">Publish</span>
+            <span class="aw">with</span>
+            <span class="aw">confidence.</span>
+          </h1>
+          <p>Check publishing eligibility for a journal you know, or explore journals by topic and rank.</p>
+          <div class="data-freshness">Data last refreshed: <strong><time id="homeDataDate" datetime="2026-10-28">28 October 2026</time></strong>. <a href="#" id="homeAboutLink">About the data</a></div>
+        </div>
+      </div>
+
+    </section>
+    </div><!-- close entryBandOuter -->
+    <div class="wrap"><!-- re-open .wrap -->
+    <section class="surface" id="entry" aria-labelledby="entryTitle">
+
+      <!-- Choice cards: centred, self-contained, overlapping the band -->
+      <div class="entry-choices" id="intents"></div>
+
+      <div class="entry-foot">
+        <button class="btn" id="toAdvancedLink" style="padding:10px 22px;font-size:13px;font-weight:600;border-color:var(--grey-400);color:var(--grey-600)">Show all filters on one page</button>
+      </div>
+
+    </section>
+
+    <!-- WIZARD -->
+    <section class="surface" id="wizard" aria-labelledby="stepHeading">
+      <div class="panel wizard-card">
+        <div class="wizard-top">
+          <div class="progress">
+            <div class="dots" id="wizDots" aria-hidden="true"></div>
+            <span class="lbl" id="wizStepLbl">Step 1</span>
+          </div>
+          <div class="wizard-running" aria-live="polite"><b id="wizCount">0</b> match so far</div>
+        </div>
+        <div class="step" id="wizStep"></div>
+        <div class="wizard-nav">
+          <button class="btn btn-ghost" id="wizBack">‹ Back</button>
+          <div class="right">
+            <button class="btn btn-ghost" id="wizSkip">Skip</button>
+            <button class="btn btn-primary" id="wizNext">Next ›</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ADVANCED -->
+    <section class="surface" id="advanced" aria-label="All filters">
+      <div class="panel adv">
+        <div class="adv-title"><span>Search &amp; filter</span><button class="btn btn-sm btn-ghost" id="advCollapse" style="text-transform:none;letter-spacing:0;font-weight:400">▲ Hide filters</button></div>
+        <div class="adv-keyword">
+          <input type="search" id="advSearch" autocomplete="off" placeholder="Keyword — title, publisher, ISSN, FOR code…" aria-label="Keyword search">
+        </div>
+        <div class="adv-row" id="advRow"></div>
+      </div>
+    </section>
+
+    <!-- RESULTS (shared by results + advanced) -->
+    <section class="surface" id="results" aria-label="Results">
+      <div id="loosen"></div>
+      <div class="results-head" id="resultsHead"></div>
+      <aside class="publishing-reminder" aria-labelledby="publishingReminderTitle">
+        <span class="reminder-icon" aria-hidden="true">✓</span>
+        <div><strong id="publishingReminderTitle">Verify before submitting.</strong> Always check the journal website for the latest open access policies, fees—including article processing charges (APCs)—agreement eligibility, publication caps and author guidance. Consider journal scope, peer review, editorial standards and research integrity—not rankings or cost alone—when making your publishing decision.</div>
+      </aside>
+      <p class="publishing-terms"><strong>Publishing terms:</strong> Fully Open Access (Gold OA) journals make all articles openly available. Hybrid journals publish a mix of open access and subscription articles.</p>
+      <div id="exploreNote" class="explore-note" hidden>
+        <span><span aria-hidden="true">💡</span> Results are matched by FOR codes and keywords. For deeper discovery, also try
+        <a href="https://www.scimagojr.com/" target="_blank" rel="noopener noreferrer">Scimago</a> or a subject database.</span>
+      </div>
+      <div id="summaryCards"></div>
+      <div id="tableArea" hidden>
+        <div class="table-wrap">
+          <div class="table-scroll" id="tableScroll">
+            <table id="journalTable" aria-label="Journal results">
+              <caption class="sr-only">Journal Finder search results. Activate a column heading to sort the table.</caption>
+              <thead><tr id="theadRow"></tr></thead>
+              <tbody id="tableBody"></tbody>
+            </table>
+          </div>
+          <div class="pagination" id="pagination"></div>
+        </div>
+      </div>
+      <div class="empty" id="emptyMsg" hidden>
+        <div class="ic" aria-hidden="true">🔍</div>
+        <p><strong>No journals match.</strong></p>
+        <p style="margin-top:6px;font-size:13px">Loosen a filter above, or clear all.</p>
+      </div>
+    </section>
+
+    <!-- data load error -->
+    <div class="empty" id="errorMsg" role="alert" hidden></div>
+  </div>
+</main>
+
+<footer>
+  <!-- Legal footer -->
+  <div class="footer-legal">
+    Charles Sturt University — TEQSA PRV12018 · CRICOS 00005F ·
+    <a href="https://library.csu.edu.au/">Charles Sturt University Library</a> ·
+    <button class="footer-about-link" onclick="document.getElementById('aboutTrigger').click()">About &amp; Help</button>
+  </div>
+
+</footer>
+
+
+
+<!-- ── Key / Legend Drawer ── -->
+<div id="keyOverlay" class="about-overlay" hidden aria-hidden="true"></div>
+<aside id="keyDrawer" class="about-drawer" hidden aria-labelledby="keyDrawerTitle" role="dialog" aria-modal="true">
+  <div class="about-drawer-header">
+    <h2 id="keyDrawerTitle">Label Key</h2>
+    <button class="about-close" id="keyClose" aria-label="Close"><span aria-hidden="true">✕</span></button>
+  </div>
+  <div class="about-drawer-body">
+
+    <section class="about-section">
+      <h3>Free to Publish</h3>
+      <p>Whether you can publish open access in this journal at no cost or reduced cost as a Charles Sturt University author.</p>
+      <div class="key-grid">
+        <span class="badge b-yes"><span aria-hidden="true">✓</span> Free — CSU Agreement</span>
+        <span class="key-desc">Free to publish for eligible CSU authors through either a CAUL-negotiated agreement or a publisher-direct agreement.</span>
+
+        <span class="badge b-diamond"><span aria-hidden="true">✓</span> Free — Diamond OA</span>
+        <span class="key-desc">Diamond Open Access — no APC for any author regardless of institution. Always free to publish.</span>
+
+        <span class="badge b-yes"><span aria-hidden="true">✓</span> Free — CSU Agreement &amp; Diamond OA</span>
+        <span class="key-desc">Covered by both a CSU agreement and Diamond OA status.</span>
+
+        <span class="badge b-disc">💰 Discounted — CSU rate</span>
+        <span class="key-desc">A negotiated APC discount applies for Charles Sturt University authors, but a fee is still required.</span>
+
+        <span class="badge b-no">No free OA option</span>
+        <span class="key-desc">No current agreement or Diamond OA status. An APC may apply.</span>
+      </div>
+    </section>
+
+    <section class="about-section">
+      <h3>Journal Type</h3>
+      <p>Whether the journal is fully open access or a hybrid subscription/OA model.</p>
+      <div class="key-grid">
+        <span class="badge b-fully-oa">Fully OA</span>
+        <span class="key-desc">Gold Open Access — all articles are published open access. APCs may apply but are often waived by agreements.</span>
+
+        <span class="badge b-hybrid">Hybrid</span>
+        <span class="key-desc">Subscription journal that also offers an OA option for individual articles. Most read-and-publish agreements cover these.</span>
+
+        <span class="badge b-sub">Subscription</span>
+        <span class="key-desc">Traditional subscription journal with no OA publishing option.</span>
+      </div>
+    </section>
+
+    <section class="about-section">
+      <h3>Scimago &amp; CSU Rank</h3>
+      <p>Journal quartile rankings. Scimago is based on the Scopus citation index. CSU Rank is an internal Charles Sturt University ranking drawing on ABDC, CORE, and other schemes.</p>
+      <div class="key-grid">
+        <span class="badge b-q1">Q1</span>
+        <span class="key-desc">Top 25% of journals in their subject area — highest ranking.</span>
+
+        <span class="badge b-q2">Q2</span>
+        <span class="key-desc">Second quartile — upper-mid range journals.</span>
+
+        <span class="badge b-q3">Q3/4</span>
+        <span class="key-desc">Combined lower-quartile category used in the CSU Journal Ranking List.</span>
+
+        <span class="badge b-q3">Q3</span>
+        <span class="key-desc">Scimago third quartile — lower-mid range journals.</span>
+
+        <span class="badge b-q4">Q4</span>
+        <span class="key-desc">Scimago bottom quartile — lowest ranked journals in their subject area.</span>
+      </div>
+    </section>
+
+    <section class="about-section">
+      <h3>Agreement cap warnings</h3>
+      <p>Some agreements have a cap on the number of Gold OA articles that can be published across all CAUL institutions in a year.</p>
+      <div class="key-grid">
+        <span class="badge b-cap"><span aria-hidden="true">⚠</span> Cap risk</span>
+        <span class="key-desc">This journal's agreement has a shared publication cap that is approaching. Check with the Library before submitting — a discount may still apply if the cap is reached.</span>
+
+        <span class="badge b-cap-reached"><span aria-hidden="true">⚠</span> Cap reached</span>
+        <span class="key-desc">The cap for this agreement has been reached. Publishing is no longer funded under the agreement this year. You will be responsible for the full APC.</span>
+      </div>
+    </section>
+
+    <section class="about-section" style="border-bottom:none">
+      <p style="font-size:12px;color:var(--grey-600)">Not sure which option applies to your manuscript? Contact your <a href="https://library.csu.edu.au/our-libraries/contact-library-team/faculty-teams" target="_blank" rel="noopener noreferrer">CSU Faculty Librarian</a> for advice before submitting.</p>
+    </section>
+
+  </div>
+</aside>
+
+<!-- ── About & Help Drawer ── -->
+<div id="aboutOverlay" class="about-overlay" hidden aria-hidden="true"></div>
+<aside id="aboutDrawer" class="about-drawer" hidden aria-labelledby="aboutDrawerTitle" role="dialog" aria-modal="true">
+  <div class="about-drawer-header">
+    <h2 id="aboutDrawerTitle">About &amp; Help</h2>
+    <button class="about-close" id="aboutClose" aria-label="Close"><span aria-hidden="true">✕</span></button>
+  </div>
+  <div class="about-drawer-body">
+
+    <section class="about-section">
+      <h3>About the Charles Sturt University Journal Finder</h3>
+      <p>The Charles Sturt University Journal Finder helps researchers and staff at Charles Sturt University identify journals that are free or discounted to publish in, and explore journals by quality ranking and field of research.</p>
+      <p><strong>Data last updated:</strong> <time id="aboutDataDate" datetime="2026-10-28">28 October 2026</time>.</p>
+    </section>
+
+    <section class="about-section">
+      <h3>How to use this tool</h3>
+      <h4>Check a journal</h4>
+      <p>Know the journal title or ISSN? Use <strong>Check a journal</strong> to look it up directly. Results show the journal's rank prominently, its free-to-publish status, and any CSU agreement or discount.</p>
+      <h4>Explore journals</h4>
+      <p>Use <strong>Explore journals</strong> to discover journals by topic, keyword, or FOR code — then filter by rank, free-to-publish status, or agreement. Note that results are matched by FOR codes and keywords; for deeper discovery, also consult Scimago or a subject database, as scope-based matches may be missed.</p>
+      <h4>Find related journals</h4>
+      <p>Each journal card includes a <strong>Find related journals</strong> button. This identifies journals sharing the same FOR (Field of Research) codes, ranked by how many codes they have in common, then by free-to-publish status and Scimago quartile. This is a research-area match, not a citation-based similarity score. Journals without FOR codes will show a "not enough data" message with a link to Scimago.</p>
+      <h4>Share a search</h4>
+      <p>The <strong>Share</strong> button copies a shareable link to your clipboard so you can paste it into an email, Teams message or document. The link preserves your current search and filters—for example, a list of Q1 free-to-publish journals in a specific FOR code area.</p>
+    </section>
+
+    <section class="about-section">
+      <h3>Data sources</h3>
+      <ul>
+        <li><strong>CAUL Open Access Agreements 2026</strong> — Publisher agreements negotiated by the Council of Australian University Libraries (CAUL) that allow Charles Sturt University-affiliated authors to publish open access at no cost or reduced cost. Updated periodically as agreements are renewed or added.</li>
+        <li><strong>Publisher-direct agreements</strong> — A small number of journals are included under agreements negotiated directly between Charles Sturt University and a publisher, outside of CAUL. Current publisher-direct agreements include <strong>BMJ</strong> (25 journals) and the <strong>Journal of Medical Microbiology</strong> (Microbiology Society). These are maintained manually by Charles Sturt University Library and may not appear in the CAUL title list.</li>
+        <li><strong>Scimago Journal Rankings 2025</strong> — Journal quartile rankings (Q1–Q4) and Diamond Open Access status sourced from the SCImago Journal &amp; Country Rank portal, based on Scopus citation data.</li>
+        <li><strong>CSU Journal Ranking List 2025</strong> — An internal Charles Sturt University ranking list maintained by the Division of Library Services, drawing on recognised ranking schemes including ABDC, CORE, and other discipline-specific sources. This list also provides <strong>FOR (Field of Research) codes</strong> — four-digit codes from the Australian Research Council (ARC) classification system — used to power the FOR code filter and Find Similar feature.</li>
+        <li><strong>CAUL Title List (GitHub)</strong> — Journal homepage URLs are sourced from the <a href="https://github.com/CAUL-Office/CAUL_Title_List" target="_blank" rel="noopener noreferrer">CAUL Title List repository</a>, matched by ISSN. Not all journals have a recorded URL.</li>
+        <li><strong>Open Policy Finder (Jisc)</strong> — Provides direct links to journal self-archiving policy records, matched by ISSN.</li>
+      </ul>
+      <p>Manual corrections are applied where current publisher information supersedes a source dataset.</p>
+    </section>
+
+    <section class="about-section">
+      <h3>Journal type labels</h3>
+      <p>Each journal card shows whether the journal is <strong>Fully OA</strong> (Gold — all articles are open access, APC funded by the agreement) or <strong>Hybrid</strong> (a mix of open and closed articles; OA publishing is covered by the agreement). This distinction matters because some agreements only cover Hybrid journals, and Fully OA (Gold) journals under certain agreements have publication caps.</p>
+
+      <h3>Agreement cap warnings</h3>
+      <p>Some agreements impose a shared cap on the number of Gold OA articles that can be published across all CAUL institutions in a year. When funding is at risk, has been exhausted or is being treated as unavailable, a status badge appears on affected journal cards with a detailed explanation. Current capped agreements:</p>
+      <ul>
+        <li><strong>Wiley Gold OA</strong> — CSU Library is treating agreement funding as unavailable for the remainder of 2026. A 20% APC discount may apply if alternative funding is available. Wiley hybrid journals are unaffected.</li>
+      </ul>
+      <p>The <strong>Springer Nature agreement is uncapped for 2026–2028</strong>. A forecast pool applies to certain Springer and Palgrave Open fully OA titles, but publishing does not cease if the pool's maximum threshold is reached. See the <a href="https://caul.libguides.com/read-and-publish/springer-nature" target="_blank" rel="noopener noreferrer">CAUL Springer Nature agreement information</a>.</p>
+      <p>Cap status is updated manually by Charles Sturt University Library by editing a configuration file (<code>config.json</code>). Always confirm with the Library before submitting to a capped journal. See the <a href="https://libguides.csu.edu.au/OpenAccess/readandpublish" target="_blank" rel="noopener noreferrer">OA Publishing Agreements guide</a> for current details.</p>
+
+      <h3>Green OA policies</h3>
+      <p>This tool covers Gold and Diamond Open Access (paying to publish or publish-free). It does not reproduce Green OA policy details — the conditions for self-archiving an accepted manuscript in a repository. Where a journal has been matched by ISSN, its card links directly to the relevant record in <a href="https://openpolicyfinder.jisc.ac.uk/" target="_blank" rel="noopener noreferrer">Open Policy Finder (Jisc)</a>, where you can check self-archiving and embargo policies. Journals without a confirmed match link to the Open Policy Finder search page instead.</p>
+      <p>Open Policy Finder links were added using the service's API. See the <a href="https://openpolicyfinder.jisc.ac.uk/help/developers" target="_blank" rel="noopener noreferrer">Open Policy Finder API documentation</a>. Open Policy Finder content is made available under the <a href="https://creativecommons.org/licenses/by-nc-nd/4.0/" target="_blank" rel="noopener noreferrer">Creative Commons Attribution-NonCommercial-NoDerivatives 4.0 International licence (CC BY-NC-ND 4.0)</a>.</p>
+
+      <h3>How "Free to Publish" is determined</h3>
+      <p>A journal is marked free to publish in if it is covered for eligible CSU authors under an open access agreement or is a Diamond Open Access journal with no APC for any author. A journal is marked discounted where CSU authors receive a negotiated reduction on article processing charges (APCs). These determinations are based on the data sources listed above and should be verified with the Library before submission.</p>
+      <p>Access to APC funding varies between researchers, disciplines and institutions. Consider publishing cost alongside journal scope, quality, editorial standards and research integrity when selecting a journal.</p>
+    </section>
+
+    <section class="about-section">
+      <h3>Creation and maintenance</h3>
+      <p>This tool was originally developed using <strong>Claude Sonnet 4.6</strong> (Anthropic) and subsequently updated using <strong>OpenAI Codex</strong>, with data compilation, review, and quality assurance by <strong>Charles Sturt University Division of Library Services</strong>. The underlying data is updated when new agreement lists or ranking data are published.</p>
+    </section>
+
+    <section class="about-section">
+      <h3>Accessibility</h3>
+      <p>The Journal Finder has been designed to support WCAG 2.2 Level AA requirements. It supports keyboard navigation, screen readers, browser zoom, high-contrast settings and reduced-motion preferences. If you experience an accessibility problem, please <a href="https://library.csu.edu.au/our-libraries/contact-library-team/faculty-teams" target="_blank" rel="noopener noreferrer">contact the CSU Library team</a>.</p>
+    </section>
+
+    <section class="about-section">
+      <h3>Disclaimer</h3>
+      <p>Information is provided in good faith for guidance purposes. Charles Sturt University Library makes no warranty as to the accuracy or completeness of the data. Always check the journal website for the latest open access policies, fees, agreement eligibility, publication caps and author guidance. Consider journal scope, peer review, editorial standards and research integrity when making a publishing decision, and confirm eligibility with the publisher or your library liaison before submitting a manuscript.</p>
+    </section>
+
+  </div>
+</aside>
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script>
+"use strict";
+const DATA_URL = 'journals.json';
+// Derive the site root from the current location so shared searches continue
+// to work if the Journal Finder moves between repositories or domains.
+const CANONICAL_ORIGIN = new URL('.', window.location.href).href;
+const PAGE_SIZE = 100;
+const SUMMARY_N = 8;
+const LOW_THRESHOLD = 12;
+
+const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)');
+
+/* ── Facet configuration (drives wizard, advanced, chips, URL) ── */
+const ENUM_OPTS = {
+  eligible: [ {v:'Yes',t:'Free — CSU Agreement'}, {v:'No',t:'No free OA option'}, {v:'N/A',t:'No CSU agreement'} ],
+  freeoa:   [ {v:'eligible',t:'Free through a CSU agreement'}, {v:'diamond',t:'Diamond OA — free for all authors'} ],
+  diamond:  [ {v:'Yes',t:'Diamond OA only'} ],
+  discount: [ {v:'Yes',t:'CSU discount available'} ],
+  journalType: [ {v:'Fully Open Access',t:'Fully Open Access (Gold OA)'}, {v:'Hybrid',t:'Hybrid'} ],
+  scimago:  [ {v:'Q1',t:'Q1 (top quartile)'}, {v:'Q2',t:'Q2'}, {v:'Q3',t:'Q3'}, {v:'Q4',t:'Q4'} ],
+  csu:      [ {v:'Q1',t:'Q1 (top quartile)'}, {v:'Q2',t:'Q2'}, {v:'Q3Q4',t:'Q3 / Q4'} ]
+};
+const FACETS = {
+  q:         { key:'q', short:'q',  label:'Keyword',           type:'text',    q:'What journal, ISSN or term are you looking for?' },
+  eligible:  { key:'eligible', short:'el', label:'CSU agreement status', type:'enum', field:'Eligible', q:'Free-to-publish status under a CSU agreement?' },
+  freeoa:    { key:'freeoa', short:'fo', label:'Free to publish', type:'enum', q:'Which free-to-publish options would you like to include?' },
+  agreement: { key:'agreement',short:'ag', label:'Agreement',        type:'catalog', source:'agreements', field:'Agreement', q:'Which publisher agreement?' },
+  discount:  { key:'discount',short:'dis',label:'CSU Discount',       type:'enum', field:'CSU Discount', q:'Show only journals with a CSU APC discount?' },
+  diamond:   { key:'diamond', short:'dia',label:'Diamond OA',        type:'enum', field:'Diamond OA',   q:'Restrict to Diamond Open Access journals?' },
+  scimago:   { key:'scimago', short:'sci',label:'Scimago rank',      type:'enum', field:'Scimago Rank', q:'Scimago quartile?' },
+  csu:       { key:'csu',     short:'csu',label:'CSU Rank',          type:'enum', field:'CSU Rank',     q:'CSU ranking quartile?' },
+  for:       { key:'for',     short:'for',label:'Field of Research', type:'catalog', source:'forCodes', field:'FOR Codes', q:'Which Field of Research (FOR) code?' }
+};
+const INTENT_STEPS = {
+  publish: ['eligible','diamond','for','scimago'],
+  lookup:  ['q'],
+  explore: ['q','scimago','freeoa']
+};
+const STEP_OPTIONAL = {
+  publish: { eligible:false, diamond:true, for:true, scimago:true },
+  lookup:  { q:false },
+  explore: { q:false, scimago:true, freeoa:true }
+};
+const INTENTS = [
+  { id:'lookup', color:'#4967A8', title:'Check a journal', desc:'Know a title or ISSN? Look it up to see its rank, agreement, and free-to-publish status.',
+    icon:'<circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/>' },
+  { id:'explore', color:'#3C8364', title:'Explore journals', desc:'Find journals by topic, FOR code, or keyword — filter by rank and free-to-publish status.',
+    icon:'<path d="M3 3h7v7H3zM14 3h7v7h-7zM14 14h7v7h-7zM3 14h7v7H3z"/>' }
+];
+const COLUMNS = [
+  { key:'Journal Title', label:'Journal title', cls:'title-cell' },
+  { key:'Free to Publish', label:'Free to publish', cls:'ctr', badge:'ftp' },
+  { key:'Publisher Name', label:'Publisher', cls:'pub' },
+  { key:'Agreement', label:'Agreement', cls:'agr' },
+  { key:'CSU Rank', label:'CSU Rank', cls:'ctr', badge:'rank' },
+  { key:'Scimago Rank', label:'Scimago', cls:'ctr', badge:'rank' },
+  { key:'FOR Codes', label:'FOR codes', cls:'for' },
+  { key:'ISSNs', label:'ISSN', cls:'issn' }
+];
+
+/* ── State ── */
+const state = {
+  q:'', eligible:'', freeoa:[], agreement:'', diamond:'', discount:'', journalType:'', scimago:[], csu:[], for:'',
+  sortCol:'Journal Title', sortDir:'asc', page:1,
+  mode:'entry', intent:null, stepIndex:0, resultView:'summary', similarJournal:null
+};
+const FACET_KEYS = ['q','eligible','freeoa','agreement','diamond','discount','journalType','scimago','csu','for'];
+let allData = [], filtered = [], catalog = { agreements:[], forCodes:[] };
+
+/* ── DOM refs ── */
+const $ = id => document.getElementById(id);
+const stage=$('stage'), chipBar=$('chipBar'), chipsEl=$('chips'), liveCount=$('liveCount'),
+  modeToggle=$('modeToggle'), clearAllBtn=$('clearAllBtn'),
+  surfaces={ entry:$('entry'), wizard:$('wizard'), advanced:$('advanced'), results:$('results') },
+  toastEl=$('toast');
+
+
+/* ── Config: cap warnings (loaded from config.json) ── */
+const CONFIG_URL       = 'config.json';
+const CORRECTIONS_URL  = 'corrections.json';
+let capWarnings = {};  // populated after fetch
+
+function loadConfig(){
+  return fetch(CONFIG_URL)
+    .then(r => r.ok ? r.json() : {})
+    .then(cfg => {
+      capWarnings = (cfg && cfg.cap_warnings) ? cfg.cap_warnings : {};
+      if (cfg && cfg.data_last_updated) {
+        ['homeDataDate','aboutDataDate'].forEach(id => {
+          const element=$(id);
+          if (!element) return;
+          element.textContent=cfg.data_last_updated;
+          if (cfg.data_last_updated_iso) element.setAttribute('datetime', cfg.data_last_updated_iso);
+        });
+      }
+      console.log('[JF] Config loaded, cap warnings:', Object.keys(capWarnings).length);
+    })
+    .catch(() => { capWarnings = {}; });
+}
+
+function loadCorrections(){
+  return fetch(CORRECTIONS_URL)
+    .then(r => r.ok ? r.json() : {})
+    .then(cfg => {
+      if (!cfg || (!cfg.by_issn && !cfg.by_title)) return;
+
+      const byISSN  = cfg.by_issn  || {};
+      const byTitle = cfg.by_title || {};
+      let applied = 0;
+
+      allData.forEach(r => {
+        let correction = null;
+
+        // Match by any individual ISSN in the journal's ISSN list
+        if (r['ISSNs']) {
+          const issns = r['ISSNs'].split(';').map(s => s.trim());
+          for (const issn of issns) {
+            if (byISSN[issn]) { correction = byISSN[issn]; break; }
+          }
+        }
+
+        // Fallback: match by exact title
+        if (!correction) {
+          const norm = r['Journal Title'] ? r['Journal Title'].trim() : '';
+          if (byTitle[norm]) correction = byTitle[norm];
+        }
+
+        if (!correction) return;
+
+        // Apply all non-underscore fields from the correction
+        const ALLOWED = ['Scimago Rank','CSU Rank','Diamond OA','Eligible',
+                         'Free to Publish','Publisher Name','Agreement',
+                         'Journal Type','Journal Website','CSU Discount'];
+        ALLOWED.forEach(field => {
+          if (Object.prototype.hasOwnProperty.call(correction, field)) {
+            r[field] = correction[field];
+          }
+        });
+
+        // Recompute Free to Publish if not explicitly overridden
+        if (!Object.prototype.hasOwnProperty.call(correction, 'Free to Publish')) {
+          const e  = r['Eligible']   || '';
+          const d  = r['Diamond OA'] || '';
+          const di = r['CSU Discount'] || '';
+          if      (e==='Yes' && d==='Yes') r['Free to Publish'] = 'Yes — CSU Agreement & Diamond OA';
+          else if (e==='Yes')              r['Free to Publish'] = 'Yes — CSU Agreement';
+          else if (d==='Yes')              r['Free to Publish'] = 'Yes — Diamond OA';
+          else if (di==='Yes')             r['Free to Publish'] = 'Discounted — CSU rate';
+          else                             r['Free to Publish'] = 'No';
+        }
+
+        // Clear cached hay string so search re-indexes correctly
+        delete r._hay;
+        applied++;
+      });
+
+      console.log('[JF] Corrections applied:', applied);
+    })
+    .catch(() => { console.log('[JF] corrections.json not found or invalid — skipping'); });
+}
+
+function getCapWarning(r){
+  // Key is "Agreement|JournalType"
+  const key = (r['Agreement']||'') + '|' + (r['Journal Type']||'');
+  const warn = capWarnings[key];
+  if (!warn || warn.status === 'ok') return null;
+  return warn;
+}
+
+function isAgreementFundingUnavailable(r){
+  const warn = getCapWarning(r);
+  return !!warn && (warn.status === 'reached' || warn.status === 'unavailable');
+}
+
+function hasFundedCSUAgreement(r){
+  return r['Eligible'] === 'Yes' && !isAgreementFundingUnavailable(r);
+}
+
+function isFreeToPublish(r){
+  return hasFundedCSUAgreement(r) || r['Diamond OA'] === 'Yes';
+}
+
+function effectiveFreeToPublish(r){
+  if (!isAgreementFundingUnavailable(r)) return r['Free to Publish'] || '';
+  if (r['Diamond OA'] === 'Yes') return 'Yes — Diamond OA';
+  return 'No — agreement funding unavailable';
+}
+
+function journalTypeBadge(r){
+  const t = r['Journal Type'] || '';
+  if (t === 'Fully Open Access') return '<span class="badge b-fully-oa">Fully OA</span>';
+  if (t === 'Hybrid')            return '<span class="badge b-hybrid">Hybrid</span>';
+  if (t === 'Subscription' || t === 'Subscription only') return '<span class="badge b-sub">Subscription</span>';
+  return '';
+}
+
+function capBadge(r){
+  const w = getCapWarning(r);
+  if (!w) return '';
+  // The primary Free to Publish badge already shows unavailable funding.
+  // Keep the explanatory panel, but avoid a duplicate status badge.
+  if (w.status === 'unavailable') return '';
+  if (w.status === 'reached')
+    return `<span class="badge b-cap-reached" title="${esc(w.label)}"><span aria-hidden="true">⚠</span> Cap reached</span>`;
+  return `<span class="badge b-cap" title="${esc(w.label)}"><span aria-hidden="true">⚠</span> Cap risk</span>`;
+}
+
+function capDetail(r){
+  const w = getCapWarning(r);
+  if (!w) return '';
+  return `<div class="cap-detail"><span aria-hidden="true">⚠</span> <strong>${esc(w.label)}</strong> — ${esc(w.detail)}
+    ${w.link ? `<a href="${escAttr(w.link)}" target="_blank" rel="noopener noreferrer"> Learn more →</a>` : ''}
+  </div>`;
+}
+
+/* ── Load ── */
+Promise.all([loadConfig(), fetch(DATA_URL).then(r => { if(!r.ok) throw new Error(r.status+' '+r.statusText); return r.json(); })])
+  .then(([_, journalData]) => {
+    allData = journalData;
+    return loadCorrections();
+  })
+  .then(() => {
+    buildCatalog(allData);
+    buildIntents();
+    buildAdvancedControls();
+    buildTableHead();
+    $('skeleton').style.display = 'none';
+    $('loadingStatus').textContent = `Journal data loaded. ${allData.length.toLocaleString()} journals available.`;
+    const totalTxt = $('totalCountTxt');
+    if (totalTxt) totalTxt.textContent = allData.length.toLocaleString();
+    const had = readStateFromURL();
+    computeFiltered();
+    if (had) { showMode(state.mode === 'advanced' ? 'advanced' : 'results'); }
+    else { showMode('entry'); }
+    setStageHeight();
+  })
+  .catch(err => {
+    $('skeleton').style.display = 'none';
+    $('loadingStatus').textContent = 'Journal data could not be loaded.';
+    const e = $('errorMsg'); e.hidden = false;
+    e.innerHTML = '<div class="ic" aria-hidden="true">⚠</div><p><strong>Could not load journal data.</strong></p><p style="font-size:13px;margin-top:6px">'+esc(err.message)+'</p>';
+  });
+
+/* ── Build catalogs (reuses original enumeration logic) ── */
+function buildCatalog(data){
+  catalog.agreements = [...new Set(data.map(r => r['Agreement']).filter(Boolean))].sort();
+  const forSet = new Set();
+  for (const r of data){
+    if (r['FOR Codes']) r['FOR Codes'].split(';').forEach(c => { const t=c.trim(); if(t) forSet.add(t); });
+  }
+  catalog.forCodes = [...forSet].sort((a,b)=>a.localeCompare(b, undefined, {numeric:true}));
+}
+
+/* ── Predicate (one definition powers filtering + counts) ── */
+function recMatches(r, st, skip){
+  if (skip!=='eligible' && st.eligible){
+    const effectiveEligible = hasFundedCSUAgreement(r) ? 'Yes' : (r['Eligible']==='Yes' ? 'No' : r['Eligible']);
+    if (effectiveEligible !== st.eligible) return false;
+  }
+  if (skip!=='freeoa' && st.freeoa && st.freeoa.length > 0){
+    const matchesFreeRoute = st.freeoa.some(v =>
+      (v==='eligible' && hasFundedCSUAgreement(r)) ||
+      (v==='diamond' && r['Diamond OA']==='Yes')
+    );
+    if (!matchesFreeRoute) return false;
+  }
+  if (skip!=='agreement' && st.agreement && r['Agreement']    !== st.agreement) return false;
+  if (skip!=='diamond'   && st.diamond   && r['Diamond OA']   !== st.diamond)   return false;
+  if (skip!=='discount'  && st.discount  && r['CSU Discount'] !== st.discount)  return false;
+  if (skip!=='journalType' && st.journalType && r['Journal Type'] !== st.journalType) return false;
+  if (skip!=='scimago'   && st.scimago && st.scimago.length > 0 && !st.scimago.includes(r['Scimago Rank'])) return false;
+  if (skip!=='csu'       && st.csu && st.csu.length > 0){
+    const cr = r['CSU Rank'];
+    const matched = st.csu.some(v => v==='Q3Q4' ? (cr==='Q3/4'||cr==='Q3'||cr==='Q4') : cr===v);
+    if (!matched) return false;
+  }
+  if (skip!=='for' && st.for){
+    const codes = (r['FOR Codes']||'').split(';').map(c=>c.trim());
+    if (!codes.includes(st.for)) return false;
+  }
+  if (skip!=='q' && st.q){
+    let hay = r._hay; if (hay===undefined){
+      const base = [r['Journal Title'],r['Publisher Name'],r['Agreement'],r['ISSNs'],r['FOR Codes'],r['Abbreviation']].join(' ').toLowerCase();
+      const fuzzy = base.replace(/[^a-z0-9\s]/g,'').replace(/\b(the|a|an|of|in|and|for|on|with)\b/g,' ').replace(/\s+/g,' ').trim();
+      hay = r._hay = base + ' ' + fuzzy;
+    }
+    const normQ = st.q.replace(/[^a-z0-9\s]/g,'').replace(/\b(the|a|an|of|in|and|for|on|with)\b/g,' ').replace(/\s+/g,' ').trim();
+    if (!hay.includes(st.q) && (!normQ || !hay.includes(normQ))) return false;
+  }
+  return true;
+}
+
+function computeFiltered(){
+  // A new search/filter clears similar mode
+  if (state.similarJournal && (state.q || state.eligible || (state.freeoa&&state.freeoa.length) || state.agreement ||
+      state.diamond || state.discount || (state.scimago&&state.scimago.length) ||
+      (state.csu&&state.csu.length) || state.for)) {
+    state.similarJournal = null; state.similarScored = null; state.similarNoCodes = false;
+  }
+  filtered = allData.filter(r => recMatches(r, state, null));
+  sortFiltered();
+  if (state.page > Math.ceil(filtered.length/PAGE_SIZE)) state.page = 1;
+}
+function sortFiltered(){
+  const col=state.sortCol, dir=state.sortDir;
+  filtered.sort((a,b)=>{
+    let av=(col==='Free to Publish' ? effectiveFreeToPublish(a) : (a[col]||'')).toString(); const as=av.replace(/^[^a-zA-Z]+/,'').toLowerCase(); av=as||av.toLowerCase();
+    let bv=(col==='Free to Publish' ? effectiveFreeToPublish(b) : (b[col]||'')).toString(); const bs=bv.replace(/^[^a-zA-Z]+/,'').toLowerCase(); bv=bs||bv.toLowerCase();
+    if (av<bv) return dir==='asc'?-1:1;
+    if (av>bv) return dir==='asc'?1:-1;
+    return 0;
+  });
+}
+
+/* ── Per-option counts (single pass, ignores the facet being shown) ── */
+function facetCounts(facetKey){
+  const m = new Map();
+  const inc = k => m.set(k, (m.get(k)||0)+1);
+  for (const r of allData){
+    if (!recMatches(r, state, facetKey)) continue;
+    if (facetKey==='for'){
+      if (r['FOR Codes']) r['FOR Codes'].split(';').forEach(c=>{ const t=c.trim(); if(t) inc(t); });
+    } else if (facetKey==='csu'){
+      const cr=r['CSU Rank']; if(cr==='Q1') inc('Q1'); else if(cr==='Q2') inc('Q2'); else if(cr==='Q3/4'||cr==='Q3'||cr==='Q4') inc('Q3Q4');
+    } else if (facetKey==='diamond'){
+      if (r['Diamond OA']==='Yes') inc('Yes');
+    } else if (facetKey==='freeoa'){
+      if (hasFundedCSUAgreement(r)) inc('eligible');
+      if (r['Diamond OA']==='Yes') inc('diamond');
+    } else if (facetKey==='eligible'){
+      const effectiveEligible = hasFundedCSUAgreement(r) ? 'Yes' : (r['Eligible']==='Yes' ? 'No' : r['Eligible']);
+      if (effectiveEligible) inc(effectiveEligible);
+    } else {
+      const v = r[FACETS[facetKey].field]; if (v) inc(v);
+    }
+  }
+  return m;
+}
+
+/* ── Active facets / chips ── */
+function activeKeys(){ return FACET_KEYS.filter(k => Array.isArray(state[k]) ? state[k].length > 0 : state[k]); }
+function facetValueLabel(key, val){
+  if (key==='q') return '“'+val+'”';
+  if (key==='eligible') return {Yes:'Free — CSU Agreement',No:'No free OA option','N/A':'No CSU agreement'}[val]||val;
+  if (key==='freeoa'){
+    const arr=Array.isArray(val)?val:[val];
+    return arr.map(v=>v==='eligible'?'CSU agreement':'Diamond OA').join(' or ');
+  }
+  if (key==='diamond') return 'Diamond OA';
+  if (key==='discount') return 'CSU Discount';
+  if (key==='journalType') return val==='Fully Open Access'?'Fully OA':val;
+  if (key==='csu'){ const arr=Array.isArray(val)?val:[val]; return 'CSU '+arr.map(v=>v==='Q3Q4'?'Q3/Q4':v).join('+'); }
+  if (key==='scimago'){ const arr=Array.isArray(val)?val:[val]; return 'Scimago '+arr.join('+'); }
+  if (key==='for') return 'FOR '+val;
+  return val;
+}
+function clearFacet(key){ state[key]=(key==='scimago'||key==='csu'||key==='freeoa')?[]:'' ; if(key==='q'){ const a=$('advSearch'); if(a) a.value=''; } }
+
+/* ── URL ── */
+function updateURL(replace){
+  const p = new URLSearchParams();
+  if (state.q) p.set('q', state.q);
+  if (state.eligible) p.set('el', {Yes:'Y',No:'N','N/A':'NA'}[state.eligible]);
+  if (state.freeoa && state.freeoa.length) p.set('fo', state.freeoa.map(v=>v==='eligible'?'el':'dia').join(','));
+  if (state.agreement){ const i=catalog.agreements.indexOf(state.agreement); p.set('ag', i>=0?('a'+i):state.agreement); }
+  if (state.diamond) p.set('dia','1');
+  if (state.scimago && state.scimago.length) p.set('sci', state.scimago.join(','));
+  if (state.csu && state.csu.length) p.set('csu', state.csu.map(v=>v==='Q3Q4'?'Q34':v).join(','));
+  if (state.for) p.set('for', state.for);
+  const ci = COLUMNS.findIndex(c=>c.key===state.sortCol);
+  if (!(ci===0 && state.sortDir==='asc')) p.set('s', ci+(state.sortDir==='asc'?'a':'d'));
+  p.set('view', state.mode==='advanced'?'adv':'r');
+  const qs = '?'+p.toString();
+  try { history.replaceState(null,'',qs); } catch(e){}
+  return CANONICAL_ORIGIN + qs;
+}
+function readStateFromURL(){
+  const p = new URLSearchParams(location.search);
+  if (![...p.keys()].length) return false;
+  let any=false;
+  if (p.get('q')){ state.q=p.get('q').toLowerCase(); any=true; }
+  const el={Y:'Yes',N:'No',NA:'N/A'}[p.get('el')]; if(el){ state.eligible=el; any=true; }
+  const fo=p.get('fo'); if(fo){ const vals=fo.split(',').map(v=>v==='el'?'eligible':v==='dia'?'diamond':'').filter(Boolean); if(vals.length){ state.freeoa=[...new Set(vals)]; any=true; } }
+  const ag=p.get('ag'); if(ag){ state.agreement = ag[0]==='a'&&/^a\d+$/.test(ag) ? (catalog.agreements[+ag.slice(1)]||'') : ag; if(state.agreement) any=true; }
+  if (p.get('dia')==='1'){ state.diamond='Yes'; any=true; }
+  const sci=p.get('sci'); if(sci){ const vals=sci.split(',').filter(v=>/^Q[1-4]$/.test(v)); if(vals.length){ state.scimago=vals; any=true; } }
+  const csu=p.get('csu'); if(csu){ const vals=csu.split(',').map(v=>v==='Q34'?'Q3Q4':v).filter(v=>/^Q[12]$|^Q3Q4$/.test(v)); if(vals.length){ state.csu=vals; any=true; } }
+  const forv=p.get('for'); if(forv && catalog.forCodes.includes(forv)){ state.for=forv; any=true; }
+  const s=p.get('s'); if(s && /^\d+[ad]$/.test(s)){ const ci=+s.slice(0,-1); if(COLUMNS[ci]){ state.sortCol=COLUMNS[ci].key; state.sortDir = s.slice(-1)==='a'?'asc':'desc'; } }
+  state.mode = p.get('view')==='adv' ? 'advanced' : 'results';
+  return any;
+}
+
+/* ── Central dispatcher ── */
+function applyFilters(opts){
+  computeFiltered();
+  renderChips();
+  renderLiveCount();
+  if (state.mode==='wizard') renderWizardCount();
+  if (state.mode==='advanced' || state.mode==='results') renderResultsArea();
+  updateURL();
+}
+
+/* ── Mode / surface switching ── */
+function showMode(mode){
+  state.mode = mode;
+  for (const k in surfaces) surfaces[k].classList.toggle('active', k===mode || (k==='results' && mode==='advanced'));
+  const _eb = document.getElementById('entryBandOuter'); if(_eb) _eb.classList.toggle('active', mode==='entry');
+  // advanced shows BOTH the advanced panel and the results area (table)
+  surfaces.advanced.classList.toggle('active', mode==='advanced');
+  surfaces.results.classList.toggle('active', mode==='advanced' || mode==='results');
+  chipBar.classList.toggle('show', mode!=='entry');
+  modeToggle.textContent = mode==='advanced' ? 'View results ›' : '☰ Show all filters';
+  modeToggle.style.display = mode==='entry' ? 'none' : '';
+  $('startOverBtn').hidden = mode==='entry';
+  if (mode==='advanced'){ state.resultView='table'; syncAdvancedFromState(); }
+  if (mode==='results' && state.intent==='lookup') state.resultView='summary';
+  renderChips(); renderLiveCount();
+  if (mode==='wizard') renderStep();
+  if (mode==='advanced' || mode==='results') renderResultsArea();
+  stage.scrollTop = 0;
+  setStageHeight();
+  if (mode === 'entry') {
+    animateHeading();
+    // Clear inline search boxes in choice cards
+    document.querySelectorAll('.intent-search-wrap input').forEach(inp => {
+      inp.value = '';
+    });
+    // Clear live count hints
+    document.querySelectorAll('.intent-search-hint').forEach(el => {
+      el.innerHTML = '';
+    });
+    // Clear cached hay strings so search re-runs fresh
+    if (typeof allData !== 'undefined') allData.forEach(r => { delete r._hay; });
+  }
+}
+
+/* ── ENTRY ── */
+function buildIntents(){
+  const placeholders = {
+    lookup:  'Journal title or ISSN…',
+    explore: 'Topic or FOR code…',
+  };
+  const searchLabels = {
+    lookup: 'Check journal',
+    explore: 'Explore topic',
+  };
+  $('intents').innerHTML = INTENTS.map(it => `
+    <div class="intent-card" data-intent="${it.id}" role="group" aria-label="${esc(it.title)}">
+      <span class="intent-ic">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${it.icon}</svg>
+      </span>
+      <h2>${esc(it.title)}</h2>
+      <p>${esc(it.desc)}</p>
+      <form class="intent-search-wrap" data-intent="${it.id}" role="search" aria-label="${esc(it.title)} search">
+        <input type="search" autocomplete="off"
+          placeholder="${esc(placeholders[it.id]||'Search…')}"
+          aria-label="${esc(it.title)}">
+        <button type="submit">${esc(searchLabels[it.id]||'Search')}</button>
+      </form>
+      <div class="intent-search-hint" id="hint_${it.id}" aria-live="polite"></div>
+    </div>`).join('');
+
+  // Wire up each card's inline search form
+  $('intents').querySelectorAll('.intent-search-wrap').forEach(form => {
+    const intent = form.dataset.intent;
+    const input  = form.querySelector('input');
+    const hint   = $('hint_'+intent);
+    let liveCountTimer;
+
+    // Live count hint as user types
+    input.addEventListener('input', () => {
+      const q = input.value.trim().toLowerCase();
+      clearTimeout(liveCountTimer);
+      if (!q || !allData.length) { if(hint) hint.innerHTML=''; return; }
+      liveCountTimer = setTimeout(() => {
+        const n = allData.filter(r => {
+          let hay = r._hay || [r['Journal Title'],r['Publisher Name'],r['ISSNs'],r['FOR Codes'],r['Abbreviation']].join(' ').toLowerCase();
+          return hay.includes(q);
+        }).length;
+        if (hint) hint.innerHTML = n ? `<b>${n.toLocaleString()}</b> journals match` : 'No matches';
+      }, 500);
+    });
+
+    // Submit → launch intent with query pre-filled
+    form.addEventListener('submit', e => {
+      e.preventDefault();
+      const q = input.value.trim();
+      state.q = q.toLowerCase();
+      state._rawQ = q;
+      // Highlight the selected card
+      $('intents').querySelectorAll('.intent-card').forEach(c => c.classList.remove('is-selected'));
+      form.closest('.intent-card').classList.add('is-selected');
+      startIntent(intent);
+    });
+
+    // Also clicking the card body (not the form) selects the mode
+    form.closest('.intent-card').addEventListener('click', e => {
+      if (e.target.closest('.intent-search-wrap')) return; // handled by form
+      input.focus();
+    });
+  });
+}
+let entryDebounce;
+document.getElementById('entrySearch') && document.getElementById('entrySearch').addEventListener('input', e => {
+  clearTimeout(entryDebounce);
+  const v = e.target.value.trim().toLowerCase();
+  entryDebounce = setTimeout(() => {
+    const tmp = Object.assign({}, state, { q:v });
+    let c=0; if(v){ for(const r of allData) if(recMatches(r,tmp,null)) c++; }
+    (document.getElementById('searchHint')||{}).innerHTML = v ? `<b>${c.toLocaleString()}</b> match — press Enter to see them` : '';
+  }, 500);
+});
+document.getElementById('entrySearchForm') && document.getElementById('entrySearchForm').addEventListener('submit', e => {
+  e.preventDefault();
+  state.q = (document.getElementById('entrySearch')||{}).value||''.trim().toLowerCase();
+  state.intent = 'lookup'; state.resultView='summary'; state.page=1;
+  applyFilters(); showMode('results'); focusResultsTitle();
+});
+$('toAdvancedLink').addEventListener('click', () => { showMode('advanced'); applyFilters(); });
+
+/* ── WIZARD ── */
+function startIntent(intent){
+  state.intent = intent; state.stepIndex = 0;
+
+  // For 'lookup': the inline card search already captured the query,
+  // so skip the wizard and go straight to results.
+  // Also skip if all wizard steps are already answered (e.g. came from URL).
+  if (intent === 'lookup') {
+    applyFilters();
+    showMode('results');
+    focusResultsTitle();
+    return;
+  }
+
+  // For 'explore': if a query was entered in the card's inline search,
+  // skip the 'q' step since it's already answered and go to next step.
+  if (intent === 'explore' && state.q) {
+    const steps = INTENT_STEPS[intent] || [];
+    const firstUnanswered = steps.findIndex(k => k !== 'q');
+    state.stepIndex = firstUnanswered >= 0 ? firstUnanswered : steps.length;
+    if (state.stepIndex >= steps.length) {
+      applyFilters(); showMode('results'); focusResultsTitle(); return;
+    }
+  }
+
+  applyFilters(); showMode('wizard');
+}
+function currentSteps(){ return INTENT_STEPS[state.intent] || []; }
+function renderWizardCount(){ countUp($('wizCount'), filtered.length); }
+function renderStep(){
+  const steps = currentSteps();
+  state.stepIndex = Math.max(0, Math.min(state.stepIndex, steps.length-1));
+  const key = steps[state.stepIndex];
+  const f = FACETS[key];
+  const stepEl = $('wizStep');
+
+  // progress dots + label
+  $('wizDots').innerHTML = steps.map((s,i)=>`<span class="dot ${i<state.stepIndex?'done':''} ${i===state.stepIndex?'cur':''}"></span>`).join('');
+  $('wizStepLbl').textContent = `Step ${state.stepIndex+1} of ${steps.length}`;
+  renderWizardCount();
+
+  const qText = (key==='q' && state.intent==='explore') ? 'What topic or field are you interested in?' : f.q;
+  let html = `<h2 id="stepHeading" tabindex="-1">${esc(qText)}</h2>`;
+  const optional = STEP_OPTIONAL[state.intent][key];
+  const multiChoice = key==='freeoa' || key==='scimago' || key==='csu';
+  const guidance = key==='freeoa'
+    ? 'Choose one or more, or select <strong>Skip</strong> to see all options.'
+    : optional
+      ? (multiChoice ? 'Optional — choose one or more, or skip.' : 'Optional — choose one or skip.')
+      : (f.type==='text' ? 'Type to search — results update as you type.' : 'Choose one to continue.');
+  html += `<p class="sub">${guidance}</p>`;
+
+  if (f.type==='text'){
+    const kwPlaceholder = state.intent==='explore' ? 'e.g. immunology, education, climate, nursing…' : 'e.g. Nature, 1234-5678, immunology…';
+    html += `<input class="kw-input" id="kwInput" type="search" autocomplete="off" placeholder="${kwPlaceholder}" value="${esc(stateRawQ())}">`;
+    stepEl.innerHTML = html; stepEl.classList.remove('enter'); void stepEl.offsetWidth; stepEl.classList.add('enter');
+    const kw=$('kwInput');
+    kw.addEventListener('input', () => { clearTimeout(entryDebounce); entryDebounce=setTimeout(()=>{ state.q=kw.value.trim().toLowerCase(); applyFilters(); updateWizardNav(); }, 500); });
+    kw.focus();
+    updateWizardNav();
+    return;
+  }
+
+  const counts = facetCounts(key);
+  if (f.type==='enum'){
+    const opts = ENUM_OPTS[key];
+    html += `<div class="opts ${opts.length>3?'':'grid'}" role="${multiChoice?'group':'radiogroup'}" aria-label="${esc(f.label)}">`;
+    opts.forEach((o,i)=>{ html += optionHTML(key, o.v, o.t, counts.get(o.v)||0, i); });
+    html += `</div>`;
+  } else { // catalog
+    const list = catalog[f.source];
+    html += `<input class="catalog-search" id="catSearch" type="search" autocomplete="off" placeholder="Type to filter ${list.length.toLocaleString()} ${key==='for'?'FOR codes':'agreements'}…">`;
+    html += `<div class="opts catalog-list" id="catList" role="radiogroup" aria-label="${esc(f.label)}"></div>`;
+  }
+  stepEl.innerHTML = html;
+  stepEl.classList.remove('enter'); void stepEl.offsetWidth; stepEl.classList.add('enter');
+
+  stepEl.querySelectorAll('.opt').forEach(b => b.addEventListener('click', () => selectOption(key, b.dataset.v)));
+  if (f.type==='catalog'){
+    const cs=$('catSearch'), cl=$('catList');
+    const draw = q => {
+      const ql=q.trim().toLowerCase();
+      const list = catalog[f.source].filter(v => !ql || v.toLowerCase().includes(ql)).slice(0, 60);
+      cl.innerHTML = list.map((v,i)=>optionHTML(key, v, key==='for'?('FOR '+v):v, counts.get(v)||0, i)).join('') || '<p class="sub" style="padding:8px">No matches.</p>';
+      cl.querySelectorAll('.opt').forEach(b => b.addEventListener('click', () => selectOption(key, b.dataset.v)));
+    };
+    draw('');
+    cs.addEventListener('input', () => draw(cs.value));
+    setTimeout(()=>cs.focus(), 30);
+  }
+  enableRadioKeys(stepEl);
+  const h=$('stepHeading'); if(h) h.focus({preventScroll:true});
+  updateWizardNav();
+}
+function stateRawQ(){ return state._rawQ || (state.q || ''); }
+function optionHTML(key, v, label, count, i){
+  const checked = isChosen(key, v);
+  const dis = count===0 && !checked;
+  const role = (key==='scimago'||key==='csu'||key==='freeoa') ? 'checkbox' : 'radio';
+  return `<button class="opt" role="${role}" aria-checked="${checked}" data-v="${esc(v)}" style="--i:${i}" ${dis?'disabled aria-disabled="true"':''}>
+    <span class="ov"><span class="tick"></span><span>${esc(label)}</span></span>
+    <span class="cnt">${count.toLocaleString()}</span></button>`;
+}
+function isChosen(key, v){
+  if (key==='scimago'||key==='csu'||key==='freeoa') return Array.isArray(state[key]) && state[key].includes(v);
+  return state[key]===v;
+}
+function selectOption(key, v){
+  if (key==='scimago'||key==='csu'||key==='freeoa'){
+    const arr = Array.isArray(state[key]) ? [...state[key]] : [];
+    const idx = arr.indexOf(v);
+    if (idx>=0) arr.splice(idx,1); else arr.push(v);
+    state[key] = arr;
+  } else {
+    state[key] = (state[key]===v) ? '' : v;   // toggle to allow deselect
+    if (key==='q') state._rawQ = v;
+  }
+  state.page = 1;
+  applyFilters();
+  renderStep();
+  setTimeout(() => {
+    const selected = [...document.querySelectorAll('#wizStep .opt')].find(button => button.dataset.v === v);
+    if (selected) selected.focus({preventScroll:true});
+  }, 60);
+}
+function updateWizardNav(){
+  const steps = currentSteps();
+  const key = steps[state.stepIndex];
+  const optional = STEP_OPTIONAL[state.intent][key];
+  $('wizBack').style.visibility = state.stepIndex===0 ? 'hidden' : 'visible';
+  $('wizSkip').style.display = optional ? '' : 'none';
+  const last = state.stepIndex === steps.length-1;
+  $('wizNext').textContent = last ? 'See results ›' : 'Next ›';
+  const needsChoice = !optional && !state[key];
+  $('wizNext').disabled = needsChoice;
+  $('wizNext').classList.toggle('btn-primary', true);
+}
+$('wizNext').addEventListener('click', () => {
+  const steps = currentSteps();
+  if (state.stepIndex < steps.length-1){ state.stepIndex++; renderStep(); }
+  else { finishToResults(); }
+});
+$('wizBack').addEventListener('click', () => { if(state.stepIndex>0){ state.stepIndex--; renderStep(); } });
+$('wizSkip').addEventListener('click', () => {
+  const steps = currentSteps();
+  if (state.stepIndex < steps.length-1){ state.stepIndex++; renderStep(); } else finishToResults();
+});
+function finishToResults(){ state.resultView='summary'; applyFilters(); showMode('results'); focusResultsTitle(); }
+
+function enableRadioKeys(container){
+  const group = container.querySelector('[role="radiogroup"]'); if(!group) return;
+  const radios = [...group.querySelectorAll('.opt:not([disabled])')];
+  group.addEventListener('keydown', e => {
+    const i = radios.indexOf(document.activeElement);
+    if (['ArrowDown','ArrowRight'].includes(e.key)){ e.preventDefault(); radios[(i+1+radios.length)%radios.length]?.focus(); }
+    else if (['ArrowUp','ArrowLeft'].includes(e.key)){ e.preventDefault(); radios[(i-1+radios.length)%radios.length]?.focus(); }
+  });
+}
+
+/* ── ADVANCED ── */
+function buildAdvancedControls(){
+  const row = $('advRow');
+  const selects = [
+    { key:'eligible', label:'CSU agreement status', opts:[['','All'],['Yes','Free — CSU Agreement'],['No','No free OA option'],['N/A','No CSU agreement']] },
+    { key:'agreement', label:'Agreement', opts:[['','All agreements'], ...catalog.agreements.map(a=>[a,a])] },
+    { key:'diamond', label:'Diamond OA', opts:[['','All'],['Yes','Yes']] },
+    { key:'discount', label:'CSU Discount', opts:[['','All'],['Yes','Discounted for CSU authors']] },
+    { key:'journalType', label:'Journal type', opts:[['','All types'],['Fully Open Access','Fully OA (Gold)'],['Hybrid','Hybrid'],['Subscription','Subscription']] },
+    { key:'for', label:'FOR code', opts:[['','All FOR codes'], ...catalog.forCodes.map(c=>[c,c])] }
+  ];
+  row.innerHTML = selects.map(s => `<div class="fg"><label for="adv_${s.key}">${esc(s.label)}</label>
+    <select id="adv_${s.key}" data-key="${s.key}">${s.opts.map(o=>`<option value="${esc(o[0])}">${esc(o[1])}</option>`).join('')}</select></div>`).join('')
+    + `<div class="fg"><label>Scimago rank <span style="font-size:10px;color:var(--grey-600)">(multi-select via wizard)</span></label>
+       <div style="display:flex;gap:4px;flex-wrap:wrap;padding-top:4px">${['Q1','Q2','Q3','Q4'].map(q=>`<button class="btn btn-sm adv-q-btn" data-q="${q}" data-key="scimago" style="padding:4px 10px">${q}</button>`).join('')}</div></div>`
+    + `<div class="fg"><label>CSU Rank <span style="font-size:10px;color:var(--grey-600)">(multi-select)</span></label>
+       <div style="display:flex;gap:4px;flex-wrap:wrap;padding-top:4px">${['Q1','Q2','Q3Q4'].map(q=>`<button class="btn btn-sm adv-q-btn" data-q="${q}" data-key="csu" style="padding:4px 10px">${q==='Q3Q4'?'Q3/Q4':q}</button>`).join('')}</div></div>`
+    + `<button class="btn btn-ghost btn-sm" id="advClear" style="align-self:flex-end"><span aria-hidden="true">✕</span> Clear all</button>`;
+  row.querySelectorAll('select').forEach(sel => sel.addEventListener('change', () => {
+    state[sel.dataset.key] = sel.value; state.page=1; applyFilters();
+  }));
+  // Multi-select Q buttons for scimago and csu
+  row.querySelectorAll('.adv-q-btn').forEach(btn => btn.addEventListener('click', () => {
+    selectOption(btn.dataset.key, btn.dataset.q);
+    updateAdvQButtons(row);
+  }));
+  $('advClear').addEventListener('click', clearAll);
+}
+function updateAdvQButtons(row){
+  if (!row) return;
+  row.querySelectorAll('.adv-q-btn').forEach(btn => {
+    const key = btn.dataset.key;
+    const arr = Array.isArray(state[key]) ? state[key] : [];
+    const active = arr.includes(btn.dataset.q);
+    btn.style.background = active ? 'var(--csu-orange)' : '';
+    btn.style.color = active ? '#fff' : '';
+    btn.style.borderColor = active ? 'var(--csu-orange)' : '';
+  });
+}
+let advDebounce;
+$('advSearch').addEventListener('input', e => {
+  clearTimeout(advDebounce);
+  advDebounce = setTimeout(()=>{ state.q = e.target.value.trim().toLowerCase(); state._rawQ=e.target.value.trim(); state.page=1; applyFilters(); }, 500);
+});
+function syncAdvancedFromState(){
+  $('advSearch').value = state._rawQ || state.q || '';
+  ['eligible','agreement','diamond','discount','journalType','for'].forEach(k => { const s=$('adv_'+k); if(s) s.value = state[k]; });
+  // scimago and csu are multi-select handled by wizard/chip, not advanced dropdowns
+}
+
+/* ── CHIPS / live count ── */
+function renderChips(){
+  const keys = activeKeys();
+  chipsEl.innerHTML = keys.map(k => `<span class="chip"><span class="k">${esc(FACETS[k].label)}:</span> ${esc(facetValueLabel(k, state[k]))} <button data-k="${k}" aria-label="Remove ${esc(FACETS[k].label)} filter"><span aria-hidden="true">✕</span></button></span>`).join('');
+  chipsEl.querySelectorAll('button').forEach(b => b.addEventListener('click', () => { clearFacet(b.dataset.k); state.page=1; applyFilters(); }));
+  clearAllBtn.hidden = keys.length===0;
+}
+function renderLiveCount(){ countUp(liveCount, filtered.length); }
+clearAllBtn.addEventListener('click', clearAll);
+function clearAll(){ FACET_KEYS.forEach(clearFacet); state._rawQ=''; state.page=1; syncAdvancedFromState(); applyFilters(); }
+modeToggle.addEventListener('click', () => {
+  if (state.mode==='advanced'){ state.resultView='summary'; showMode('results'); }
+  else { showMode('advanced'); }
+  applyFilters();
+});
+$('startOverBtn').addEventListener('click', () => {
+  FACET_KEYS.forEach(clearFacet); state._rawQ=''; state.page=1;
+  state.intent=null; state.stepIndex=0; state.resultView='summary';
+  const _es=document.getElementById('entrySearch'); if(_es) _es.value=''; const _sh=document.getElementById('searchHint'); if(_sh) _sh.innerHTML='';
+  showMode('entry');
+});
+$('advCollapse').addEventListener('click', () => {
+  const adv = document.querySelector('.adv');
+  const collapsed = adv.classList.toggle('collapsed');
+  $('advCollapse').textContent = collapsed ? '▼ Show filters' : '▲ Hide filters';
+  requestAnimationFrame(setStageHeight);
+});
+
+/* ── RESULTS area (summary cards + table, shared with advanced) ── */
+function renderResultsArea(){
+  // Similar mode overrides normal results
+  if (state.similarJournal) { renderSimilarResults(); renderLoosen(); return; }
+  // Discovery limitation note for explore mode
+  const noteEl = $('exploreNote');
+  if (noteEl) noteEl.hidden = state.intent !== 'explore' || filtered.length === 0;
+  renderLoosen();
+  renderResultsHead();
+  const showTable = state.resultView==='table';
+  const empty = filtered.length===0;
+  $('emptyMsg').hidden = !empty;
+  $('summaryCards').hidden = showTable || empty;
+  $('tableArea').hidden = !showTable || empty;
+  if (empty) return;
+  if (showTable){ renderTable(); requestAnimationFrame(setStageHeight); } else renderSummary();
+}
+function renderResultsHead(){
+  const head = $('resultsHead');
+  if (filtered.length===0){ head.innerHTML=''; return; }
+  const subText = state.resultView==='summary' ? 'Strongest matches first.' : 'Showing all matches.';
+  const title = `<div><h2 id="resultsTitle" tabindex="-1"><b>${filtered.length.toLocaleString()}</b> journals match</h2><div class="sub">${subText}</div></div>`;
+  const seg = `<div class="seg" role="group" aria-label="Result view">
+      <button class="${state.resultView==='summary'?'on':''}" id="viewSummary" aria-pressed="${state.resultView==='summary'}">Top matches</button>
+      <button class="${state.resultView==='table'?'on':''}" id="viewTable" aria-pressed="${state.resultView==='table'}">Full table</button></div>`;
+  head.innerHTML = `${title}<div class="results-tools">${seg}
+      <button class="btn btn-sm" id="csvBtn"><span aria-hidden="true">⤓</span> Export CSV</button>
+      <button class="btn btn-sm" id="shareBtn" aria-label="Copy shareable link to clipboard"><span aria-hidden="true">\u{1F517}</span> Share</button></div>`;
+  $('viewSummary').addEventListener('click', ()=>{ state.resultView='summary'; renderResultsArea(); updateURL(); });
+  $('viewTable').addEventListener('click', ()=>{ state.resultView='table'; renderResultsArea(); updateURL(); });
+  $('csvBtn').addEventListener('click', exportCSV);
+  $('shareBtn').addEventListener('click', copyShare);
+}
+function focusResultsTitle(){
+  requestAnimationFrame(() => { const title=$('resultsTitle'); if(title) title.focus({preventScroll:true}); });
+}
+
+/* strength ranking for summary */
+function strengthScore(r){
+  let s=0;
+  if (hasFundedCSUAgreement(r)) s+=1000;
+  s += ({Q1:4,Q2:3,Q3:2,Q4:1}[r['Scimago Rank']]||0)*100;
+  s += ({Q1:4,Q2:3,'Q3/4':2,Q3:2,Q4:1}[r['CSU Rank']]||0)*20;
+  if (r['Diamond OA']==='Yes') s+=10;
+  return s;
+}
+let summarySorted = [], summaryShown = 0;
+function renderSummary(){
+  const q = state.q;
+  const score = r => {
+    let s = strengthScore(r);
+    if (q){ const t=(r['Journal Title']||'').toLowerCase(); if(t===q) s+=1e6; else if(t.startsWith(q)) s+=5e5; else if(t.includes(q)) s+=2e5; }
+    return s;
+  };
+  summarySorted = filtered.slice().sort((a,b)=>score(b)-score(a));
+  summaryShown = Math.min(SUMMARY_N, summarySorted.length);
+  drawSummaryCards();
+}
+function drawSummaryCards(){
+  const top = summarySorted.slice(0, summaryShown);
+  const remain = summarySorted.length - summaryShown;
+  const sc = $('summaryCards');
+  sc.innerHTML = `<div class="cards">${top.map((r,i)=>cardHTML(r,i)).join('')}</div>`
+    + (remain > 0 ? `<div style="text-align:center;margin:18px 0 6px"><button class="btn" id="seeMoreBtn" style="padding:10px 28px;font-size:14px">Show ${Math.min(SUMMARY_N, remain)} more ↓</button></div>` : '');
+  sc.querySelectorAll('.jcard .copybtn').forEach(b => b.addEventListener('click', () => copyJournal(allData[+b.dataset.idx])));
+  sc.querySelectorAll('.jcard .similarBtn').forEach(b => b.addEventListener('click', () => findSimilar(allData[+b.dataset.idx])));
+  const moreBtn = $('seeMoreBtn');
+  if (moreBtn) moreBtn.addEventListener('click', () => { summaryShown = Math.min(summaryShown + SUMMARY_N, summarySorted.length); drawSummaryCards(); });
+}
+function cardHTML(r, i, matchLabel){
+  const idx = allData.indexOf(r);
+  const isCheck = state.intent==='lookup';
+  const sciRank = r['Scimago Rank'];
+  const csuRank = r['CSU Rank'];
+  const journalURL = normaliseExternalURL(r['Journal Website']);
+  const rankHero = isCheck && (sciRank || csuRank) ? `<div class="rank-hero">
+    ${sciRank?`<div class="rank-hero-item"><span class="rank-hero-lbl">Scimago</span><span class="badge ${{'Q1':'b-q1','Q2':'b-q2','Q3':'b-q3','Q4':'b-q4'}[sciRank]||''}">${esc(sciRank)}</span></div>`:''}
+    ${csuRank?`<div class="rank-hero-item"><span class="rank-hero-lbl">CSU Rank</span><span class="badge ${{'Q1':'b-q1','Q2':'b-q2','Q3/4':'b-q3','Q3':'b-q3','Q4':'b-q4'}[csuRank]||''}">${esc(csuRank)}</span></div>`:''}
+  </div>` : '';
+  return `<div class="jcard${isCheck?' jcard-check':''}" style="--i:${i}">
+    ${rankHero}
+    <h3>${esc(r['Journal Title'])}</h3>
+    ${r['Publisher Name']?`<div class="meta">${esc(r['Publisher Name'])}</div>`:''}
+    ${matchLabel?`<div style="font-size:11px;color:var(--csu-green);font-weight:600;margin-bottom:4px"><span aria-hidden="true">✓</span> ${esc(matchLabel)}</div>`:''}
+    <div class="badges">${ftpBadge(r)}${journalTypeBadge(r)}${capBadge(r)}${!isCheck?rankBadgeL('CSU Rank',r['CSU Rank']):''}${!isCheck?rankBadgeL('SJR',r['Scimago Rank']):''}</div>
+    ${r['Agreement']?`<div class="crow"><span><b>Agreement:</b> ${esc(r['Agreement'])}</span></div>`:''}
+    <div class="crow">${r['ISSNs']?`<span><b>ISSN:</b> ${esc(r['ISSNs'])}</span>`:''}${r['FOR Codes']?`<span><b>FOR:</b> ${esc(r['FOR Codes'])}</span>`:''}</div>
+    ${capDetail(r)}
+    ${journalURL?`<div class="crow jcard-link"><span aria-hidden="true">🔗</span><span><a href="${escAttr(journalURL)}" target="_blank" rel="noopener noreferrer">Visit journal homepage<span class="sr-only"> (opens in a new tab)</span></a></span></div>`:''}
+    ${(()=>{
+      const issnRaw = (r['ISSNs']||'').split(';')[0].trim();
+      const opfURL = r['Open Policy Finder URL'] || '';
+      if (opfURL) return `<div class="crow jcard-link"><span aria-hidden="true">📋</span><span><a href="${escAttr(opfURL)}" target="_blank" rel="noopener noreferrer">View Green OA policy (Open Policy Finder)<span class="sr-only"> (opens in a new tab)</span></a></span></div>`;
+      return issnRaw ? `<div class="crow jcard-link"><span aria-hidden="true">📋</span><span><a href="https://openpolicyfinder.jisc.ac.uk/" target="_blank" rel="noopener noreferrer">Search Open Policy Finder<span class="sr-only"> (opens in a new tab)</span></a> — ISSN: <code style="font-size:11px;background:var(--grey-100);padding:1px 5px;border-radius:3px;user-select:all">${esc(issnRaw)}</code></span></div>` : '';
+    })()}
+    <div class="cardfoot">
+      <div style="display:flex;gap:6px">
+        <button class="btn btn-sm copybtn" data-idx="${idx}">Copy details</button>
+        <button class="btn btn-sm btn-similar similarBtn" data-idx="${idx}" title="Find journals in the same research area">Find related journals</button>
+      </div>
+    </div></div>`;
+}
+
+function normaliseExternalURL(value){
+  const raw=(value||'').trim();
+  if (!raw || /^(tbc|tbd|yet to publish|n\/?a)$/i.test(raw)) return '';
+  const candidate=/^https?:\/\//i.test(raw) ? raw : `https://${raw}`;
+  try {
+    const url=new URL(candidate);
+    return (url.protocol==='https:' || url.protocol==='http:') && url.hostname.includes('.') ? url.href : '';
+  } catch (_) { return ''; }
+}
+
+
+/* ── Find Related Journals ── */
+function findSimilar(sourceJournal) {
+  if (!sourceJournal) return;
+
+  const forRaw = (sourceJournal['FOR Codes'] || '').trim();
+
+  // No FOR codes — show "not enough data" message
+  if (!forRaw) {
+    state.similarJournal = sourceJournal;
+    state.similarNoCodes = true;
+    state.page = 1;
+    showMode('results');
+    renderResultsArea();
+    return;
+  }
+
+  // Parse FOR codes for this journal
+  const sourceCodes = forRaw.split(';').map(c => c.trim()).filter(Boolean);
+
+  // Score every other journal by how many FOR codes it shares
+  const scored = [];
+  for (const r of allData) {
+    if (r === sourceJournal) continue;
+    const rCodes = (r['FOR Codes'] || '').split(';').map(c => c.trim()).filter(Boolean);
+    if (!rCodes.length) continue;
+    const matches = sourceCodes.filter(c => rCodes.includes(c)).length;
+    if (matches > 0) {
+      scored.push({ r, matches, total: sourceCodes.length });
+    }
+  }
+
+  // Sort by number of matching codes desc, then by Free to Publish, then Scimago rank
+  const rankOrder = { Q1:4, Q2:3, Q3:2, Q4:1 };
+  scored.sort((a, b) => {
+    if (b.matches !== a.matches) return b.matches - a.matches;
+    if (isFreeToPublish(b.r) !== isFreeToPublish(a.r))
+      return isFreeToPublish(b.r) ? 1 : -1;
+    return (rankOrder[b.r['Scimago Rank']] || 0) - (rankOrder[a.r['Scimago Rank']] || 0);
+  });
+
+  state.similarJournal = sourceJournal;
+  state.similarScored  = scored;
+  state.similarNoCodes = false;
+  state.similarShown   = Math.min(12, scored.length);
+  state.page = 1;
+
+  showMode('results');
+  renderResultsArea();
+}
+
+function renderSimilarBanner() {
+  const r = state.similarJournal;
+  if (!r) return '';
+  const forCodes = (r['FOR Codes']||'').split(';').map(c=>c.trim()).filter(Boolean);
+  const total = state.similarScored ? state.similarScored.length : 0;
+  return `<div class="similar-banner">
+    <div class="similar-banner-text">
+      <strong><span aria-hidden="true">🔍</span> Journals related to: ${esc(r['Journal Title'])}</strong>
+      <span>Matched by shared FOR codes: ${forCodes.map(c=>`<b>${esc(c)}</b>`).join(', ')} · ${total.toLocaleString()} journals share at least one code · ranked by number of codes in common</span>
+    </div>
+    <div class="similar-banner-actions">
+      <button class="btn btn-sm" onclick="clearSimilar()" style="border-color:var(--csu-brown-lt);color:var(--csu-brown-lt)"><span aria-hidden="true">✕</span> Clear</button>
+    </div>
+  </div>`;
+}
+
+function clearSimilar() {
+  state.similarJournal = null;
+  state.similarScored  = null;
+  state.similarNoCodes = false;
+  state.similarShown   = 0;
+  renderResultsArea();
+}
+
+function renderSimilarResults() {
+  const sc = $('summaryCards');
+  sc.hidden = false;
+  $('tableArea').hidden = true;
+
+  // No FOR codes case
+  if (state.similarNoCodes) {
+    const r = state.similarJournal;
+    sc.innerHTML = renderSimilarBanner() + `
+      <div class="no-for-msg">
+        <strong>Not enough data to find related journals</strong>
+        <em>${esc(r['Journal Title'])}</em> has no FOR (Field of Research) codes in our dataset.
+        FOR codes are required to identify related journals.<br><br>
+        <a href="https://www.scimagojr.com/journalsearch.php?q=${encodeURIComponent(r['Journal Title'])}" target="_blank" rel="noopener noreferrer" style="color:var(--csu-blue)">
+          Try searching Scimago directly →
+        </a>
+      </div>`;
+    return;
+  }
+
+  const allScored = state.similarScored || [];
+  const shown     = state.similarShown  || 12;
+  const top       = allScored.slice(0, shown);
+  const remain    = allScored.length - shown;
+
+  const cards = top.map((s, i) => {
+    const matchLabel = s.matches === s.total
+      ? `All ${s.total} FOR code${s.total>1?'s':''} match`
+      : `${s.matches} of ${s.total} FOR code${s.total>1?'s':''} match`;
+    return cardHTML(s.r, i, matchLabel);
+  }).join('');
+
+  sc.innerHTML = renderSimilarBanner()
+    + `<div class="cards">${cards}</div>`
+    + (remain > 0
+      ? `<div style="text-align:center;margin:18px 0 6px">
+           <button class="btn" id="seeMoreSimilar" style="padding:10px 28px;font-size:14px">
+             Show ${Math.min(12, remain)} more ↓
+           </button>
+         </div>`
+      : '');
+
+  sc.querySelectorAll('.jcard .copybtn').forEach(b =>
+    b.addEventListener('click', () => copyJournal(allData[+b.dataset.idx])));
+  sc.querySelectorAll('.jcard .similarBtn').forEach(b =>
+    b.addEventListener('click', () => findSimilar(allData[+b.dataset.idx])));
+
+  const moreBtn = $('seeMoreSimilar');
+  if (moreBtn) moreBtn.addEventListener('click', () => {
+    state.similarShown = Math.min(state.similarShown + 12, allScored.length);
+    renderSimilarResults();
+  });
+}
+/* ── Loosen panel ── */
+function renderLoosen(){
+  const box = $('loosen');
+  const keys = activeKeys();
+  if (filtered.length > LOW_THRESHOLD || keys.length===0){ box.innerHTML=''; return; }
+  const base = filtered.length;
+  const sugg = keys.map(k => {
+    const tmp = Object.assign({}, state); tmp[k]='';
+    let c=0; for(const r of allData) if(recMatches(r,tmp,null)) c++;
+    return { k, gain:c-base };
+  }).filter(s=>s.gain>0).sort((a,b)=>b.gain-a.gain);
+  if (!sugg.length){ box.innerHTML=''; return; }
+  box.innerHTML = `<div class="loosen">
+    <h3><span aria-hidden="true">⚡</span> ${base===0?'No journals match':'Only '+base+' match'} — try loosening a filter</h3>
+    <p>Tick the filters to remove, then apply. The biggest openers are first.</p>
+    <div class="loosen-opts">${sugg.map(s=>`<label class="loosen-opt"><input type="checkbox" value="${s.k}"><span>Remove <b>${esc(FACETS[s.k].label)}: ${esc(facetValueLabel(s.k,state[s.k]))}</b></span><span class="gain">+${s.gain.toLocaleString()}</span></label>`).join('')}</div>
+    <div class="loosen-actions"><button class="btn btn-primary btn-sm" id="loosenApply">Apply</button><button class="btn btn-ghost btn-sm" id="loosenAll">Clear all filters</button></div>
+  </div>`;
+  $('loosenApply').addEventListener('click', () => {
+    box.querySelectorAll('input:checked').forEach(c => clearFacet(c.value));
+    state.page=1; syncAdvancedFromState(); applyFilters();
+  });
+  $('loosenAll').addEventListener('click', clearAll);
+}
+
+/* ── TABLE ── */
+function buildTableHead(){
+  $('theadRow').innerHTML = COLUMNS.map(c => `<th class="col-${c.key.replace(/\s/g,'')}" data-col="${c.key}" aria-sort="none" tabindex="0" role="columnheader">${esc(c.label)}<i class="si"></i></th>`).join('');
+  $('theadRow').querySelectorAll('th').forEach(th => {
+    const handler = () => {
+      const col=th.dataset.col;
+      state.sortDir = (state.sortCol===col && state.sortDir==='asc') ? 'desc' : 'asc';
+      state.sortCol = col;
+      applyFilters();
+    };
+    th.addEventListener('click', handler);
+    th.addEventListener('keydown', e => { if(e.key==='Enter'||e.key===' '){ e.preventDefault(); handler(); } });
+  });
+}
+function renderTable(){
+  const total = filtered.length;
+  const start = (state.page-1)*PAGE_SIZE;
+  const slice = filtered.slice(start, start+PAGE_SIZE);
+  const body = $('tableBody');
+  const paint = () => {
+    body.innerHTML = slice.map(r => {
+      const idx = allData.indexOf(r);
+      return '<tr>' + COLUMNS.map(c => cellHTML(r,c,idx)).join('') + '</tr>';
+    }).join('');
+    body.querySelectorAll('.rowcopy').forEach(b => b.addEventListener('click', () => copyJournal(allData[+b.dataset.idx])));
+    body.classList.remove('fade');
+  };
+  if (!reduceMotion.matches){ body.classList.add('fade'); setTimeout(paint, 110); } else paint();
+  // sort indicators
+  $('theadRow').querySelectorAll('th').forEach(th => th.setAttribute('aria-sort', th.dataset.col===state.sortCol ? (state.sortDir==='asc'?'ascending':'descending') : 'none'));
+  renderPagination(total);
+}
+function cellHTML(r, c, idx){
+  if (c.badge==='rank') return `<td class="ctr">${rankBadge(r[c.key])}</td>`;
+  if (c.badge==='ftp')  return `<td class="ctr">${ftpBadge(r)}</td>`;
+  if (c.key==='Journal Title') return `<td class="title-cell">${esc(r[c.key])} <button class="rowcopy" data-idx="${idx}" aria-label="Copy details for ${escAttr(r[c.key])}">copy</button></td>`;
+  return `<td class="${c.cls}">${esc(r[c.key])||dash()}</td>`;
+}
+function renderPagination(total){
+  const pages = Math.ceil(total/PAGE_SIZE);
+  const pg = $('pagination');
+  if (pages<=1){ pg.innerHTML=''; return; }
+  const range = pageRange(state.page, pages);
+  let html = `<button class="pg" data-go="${state.page-1}" ${state.page===1?'disabled':''} aria-label="Previous page">‹</button>`;
+  range.forEach(p => { html += p==='…' ? `<span style="padding:0 4px;color:var(--grey-600)">…</span>` : `<button class="pg ${p===state.page?'active':''}" data-go="${p}" ${p===state.page?'aria-current="page"':''} aria-label="Page ${p}">${p}</button>`; });
+  html += `<button class="pg" data-go="${state.page+1}" ${state.page===pages?'disabled':''} aria-label="Next page">›</button>`;
+  pg.innerHTML = html;
+  pg.querySelectorAll('button[data-go]').forEach(b => b.addEventListener('click', () => { state.page=+b.dataset.go; renderTable(); $('tableScroll').scrollTop=0; }));
+}
+function pageRange(cur, total){
+  if (total<=7) return Array.from({length:total},(_,i)=>i+1);
+  const r=[1]; if(cur>3) r.push('…');
+  for(let p=Math.max(2,cur-1); p<=Math.min(total-1,cur+1); p++) r.push(p);
+  if(cur<total-2) r.push('…'); r.push(total); return r;
+}
+
+/* ── Badges / helpers (reused from original) ── */
+function rankBadge(v){ const c={Q1:'b-q1',Q2:'b-q2','Q3/4':'b-q3',Q3:'b-q3',Q4:'b-q4'}[v]; return c?`<span class="badge ${c}">${v}</span>`:dash(); }
+function rankBadgeL(lbl,v){ const c={Q1:'b-q1',Q2:'b-q2','Q3/4':'b-q3',Q3:'b-q3',Q4:'b-q4'}[v]; return c?`<span class="badge ${c}"><span class="b-lbl">${lbl}</span>${v}</span>`:''; }
+function dash(){ return '<span class="dash">—</span>'; }
+function ftpBadge(r){
+  if (isAgreementFundingUnavailable(r) && r['Diamond OA'] !== 'Yes')
+    return '<span class="badge b-cap-reached"><span aria-hidden="true">✕</span> Agreement funding unavailable</span>';
+  const ftp = effectiveFreeToPublish(r);
+  if (ftp.startsWith('Yes — CSU Agreement & Diamond OA')) return '<span class="badge b-yes"><span aria-hidden="true">✓</span> Free — CSU Agreement & Diamond OA</span>';
+  if (ftp.startsWith('Yes — CSU Agreement')) return '<span class="badge b-yes"><span aria-hidden="true">✓</span> Free — CSU Agreement</span>';
+  if (ftp.startsWith('Yes — Diamond OA'))    return '<span class="badge b-diamond"><span aria-hidden="true">✓</span> Free — Diamond OA</span>';
+  if (ftp.startsWith('Discounted'))          return '<span class="badge b-disc">💰 Discounted — CSU rate</span>';
+  return '<span class="badge b-no">No free OA option</span>';
+}
+function escAttr(s){ if(!s) return ''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function esc(s){ if(s==null) return ''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+/* ── Count-up animation ── */
+function countUp(el, target){
+  if (!el) return;
+  const from = parseInt((el.textContent||'0').replace(/[^\d]/g,''),10) || 0;
+  if (reduceMotion.matches || from===target){ el.textContent = target.toLocaleString(); return; }
+  const dur=420, t0=performance.now();
+  const tick = now => {
+    const p = Math.min(1, (now-t0)/dur);
+    const e = 1-Math.pow(1-p,3);
+    el.textContent = Math.round(from+(target-from)*e).toLocaleString();
+    if (p<1) requestAnimationFrame(tick);
+  };
+  requestAnimationFrame(tick);
+}
+
+/* ── Outputs: CSV, share, copy ── */
+function exportCSV(){
+  const cols = COLUMNS.map(c=>c.key);
+  const q = s => { s=(s==null?'':String(s)); return /[",;\n]/.test(s) ? '"'+s.replace(/"/g,'""')+'"' : s; };
+  const lines = [cols.map(q).join(',')];
+  for (const r of filtered) lines.push(cols.map(c=>q(c==='Free to Publish' ? effectiveFreeToPublish(r) : r[c])).join(','));
+  const blob = new Blob([lines.join('\r\n')], {type:'text/csv;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href=url; a.download=`csu-journals-${filtered.length}.csv`;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url), 1500);
+  toast(`Exported ${filtered.length.toLocaleString()} journals`);
+}
+function copyShare(){ const link = updateURL(); copyText(link, 'Share link copied'); }
+function copyJournal(r){
+  if (!r) return;
+  const agreementFunding = hasFundedCSUAgreement(r) ? 'Yes' : 'No';
+  const t = [
+    r['Journal Title'],
+    r['Publisher Name'] ? 'Publisher: '+r['Publisher Name'] : '',
+    'Free through CSU agreement: '+agreementFunding,
+    isAgreementFundingUnavailable(r) ? 'Wiley Gold agreement funding: unavailable for the remainder of 2026' : '',
+    'CSU Rank: '+(r['CSU Rank']||'—'),
+  ].filter(Boolean).join('\n');
+  copyText(t, 'Journal details copied');
+}
+function copyText(text, okMsg){
+  if (navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(()=>toast(okMsg)).catch(()=>fallbackCopy(text, okMsg));
+  } else fallbackCopy(text, okMsg);
+}
+function fallbackCopy(text, okMsg){
+  const ta=document.createElement('textarea'); ta.value=text; ta.style.position='fixed'; ta.style.opacity='0';
+  document.body.appendChild(ta); ta.focus(); ta.select();
+  let ok=false; try{ ok=document.execCommand('copy'); }catch(e){}
+  ta.remove(); toast(ok?okMsg:'Press Ctrl+C to copy');
+}
+let toastTimer;
+function toast(msg){ toastEl.textContent=msg; toastEl.classList.add('show'); clearTimeout(toastTimer); toastTimer=setTimeout(()=>toastEl.classList.remove('show'), 2600); }
+
+/* ── Layout: bound table height to available stage space ── */
+function setStageHeight(){
+  const area = $('tableArea'); if (area.hidden) return;
+  const scroll = $('tableScroll');
+  const footerTop = document.querySelector('footer').getBoundingClientRect().top; // = bottom of the scrolling stage
+  const top = scroll.getBoundingClientRect().top;
+  const pag = $('pagination');
+  const pagH = pag ? pag.offsetHeight : 0;
+  const avail = footerTop - top - pagH - 48; // reserve pagination + wrap padding + breathing room
+  scroll.style.maxHeight = Math.max(200, avail) + 'px';
+}
+window.addEventListener('resize', () => { clearTimeout(window._rz); window._rz=setTimeout(setStageHeight, 120); });
+reduceMotion.addEventListener('change', () => { if(state.mode==='wizard') renderWizardCount(); renderLiveCount(); });
+
+/* ── Heading animation: drift-in (all devices) + magnetic (desktop) ── */
+(function(){
+  const DIRS = [
+    [-60,  20],  // Find       — from left
+    [ 40, -30],  // the        — from upper right
+    [-30,  50],  // right      — from lower left
+    [ 70,  15],  // journal.   — from right
+    [-50, -40],  // Publish    — from upper left
+    [ 35,  45],  // with       — from lower right
+    [-45, -20],  // confidence — from upper left
+  ];
+  const STAGGER   = 95;   // ms between each word
+  const DELAY     = 60;   // ms before first word
+  const DRIFT_DUR = 520;  // ms for drift transition
+  const MAG_STR   = 28;   // max magnetic displacement (px)
+  const MAG_DIST  = 110;  // px radius of magnetic influence
+
+  let magneticEnabled = false;
+  let cleanupMagnetic = null;
+
+  function animateHeading() {
+    const words = [...document.querySelectorAll('#entryTitle .aw')];
+    if (!words.length) return;
+
+    // ── Tear down previous magnetic listeners ──
+    if (cleanupMagnetic) { cleanupMagnetic(); cleanupMagnetic = null; }
+    magneticEnabled = false;
+
+    // ── Reset all words: no transition, invisible, at their drift positions ──
+    words.forEach((w, i) => {
+      w.style.transition = 'none';
+      w.style.opacity    = '0';
+      const [dx, dy] = DIRS[i] || [0, 20];
+      w.style.transform  = `translate(${dx}px, ${dy}px)`;
+      w.classList.remove('drifted','magnetic','snap');
+    });
+
+    // Force reflow so resets apply before we start animating
+    void document.getElementById('entryTitle').offsetHeight;
+
+    // ── Drift each word in from its direction ──
+    words.forEach((w, i) => {
+      setTimeout(() => {
+        w.style.transition = `opacity ${DRIFT_DUR}ms ease, transform ${DRIFT_DUR}ms cubic-bezier(0.22, 1, 0.36, 1)`;
+        w.style.opacity    = '1';
+        w.style.transform  = 'translate(0, 0)';
+      }, DELAY + i * STAGGER);
+    });
+
+    // ── After all words have landed, enable magnetic on desktop ──
+    const totalDrift = DELAY + words.length * STAGGER + DRIFT_DUR + 50;
+    setTimeout(() => {
+      // Only enable magnetic on devices with a fine pointer (mouse)
+      if (!window.matchMedia('(pointer: fine)').matches) return;
+
+      words.forEach(w => {
+        w.style.transition = '';
+        w.classList.add('magnetic');
+      });
+      magneticEnabled = true;
+
+      const h1 = document.getElementById('entryTitle');
+
+      function onMove(e) {
+        if (!magneticEnabled) return;
+        words.forEach(w => {
+          const rect   = w.getBoundingClientRect();
+          const cx     = rect.left + rect.width  / 2;
+          const cy     = rect.top  + rect.height / 2;
+          const dx     = e.clientX - cx;
+          const dy     = e.clientY - cy;
+          const dist   = Math.sqrt(dx*dx + dy*dy);
+          if (dist < MAG_DIST) {
+            const force = (1 - dist / MAG_DIST);
+            const mx    = dx * force * (MAG_STR / MAG_DIST) * 1.8;
+            const my    = dy * force * (MAG_STR / MAG_DIST) * 1.8;
+            w.style.transform = `translate(${mx.toFixed(1)}px, ${my.toFixed(1)}px)`;
+          } else {
+            w.style.transform = 'translate(0, 0)';
+          }
+        });
+      }
+
+      function onLeave() {
+        words.forEach(w => { w.style.transform = 'translate(0, 0)'; });
+      }
+
+      h1.addEventListener('mousemove', onMove);
+      h1.addEventListener('mouseleave', onLeave);
+
+      cleanupMagnetic = () => {
+        h1.removeEventListener('mousemove', onMove);
+        h1.removeEventListener('mouseleave', onLeave);
+        words.forEach(w => {
+          w.style.transform = '';
+          w.classList.remove('magnetic');
+        });
+      };
+    }, totalDrift);
+  }
+
+  // Expose so showMode can call it
+  window.animateHeading = animateHeading;
+})();
+
+/* ── Accessible modal drawers ── */
+function setupDrawer(triggerId, overlayId, drawerId, closeId){
+  const trigger=$(triggerId), overlay=$(overlayId), drawer=$(drawerId), closeBtn=$(closeId);
+  if (!trigger || !overlay || !drawer || !closeBtn) return;
+  const backgroundRoots=[document.querySelector('header'), $('chipBar'), $('stage'), document.querySelector('footer')].filter(Boolean);
+  let returnFocus=trigger;
+
+  function setBackgroundInert(value){
+    backgroundRoots.forEach(element => { element.inert=value; });
+  }
+  function openDrawer(){
+    returnFocus=document.activeElement || trigger;
+    drawer.hidden=false;
+    overlay.hidden=false;
+    trigger.setAttribute('aria-expanded','true');
+    setBackgroundInert(true);
+    document.body.style.overflow='hidden';
+    closeBtn.focus();
+  }
+  function closeDrawer(){
+    drawer.hidden=true;
+    overlay.hidden=true;
+    trigger.setAttribute('aria-expanded','false');
+    setBackgroundInert(false);
+    document.body.style.overflow='';
+    (returnFocus && returnFocus.isConnected ? returnFocus : trigger).focus();
+  }
+  function focusableElements(){
+    return [...drawer.querySelectorAll('a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])')]
+      .filter(element => !element.hidden && element.getClientRects().length);
+  }
+  drawer.addEventListener('keydown', event => {
+    if (event.key==='Escape') { event.preventDefault(); closeDrawer(); return; }
+    if (event.key!=='Tab') return;
+    const items=focusableElements();
+    if (!items.length) { event.preventDefault(); drawer.focus(); return; }
+    const first=items[0], last=items[items.length-1];
+    if (event.shiftKey && document.activeElement===first) { event.preventDefault(); last.focus(); }
+    else if (!event.shiftKey && document.activeElement===last) { event.preventDefault(); first.focus(); }
+  });
+  trigger.addEventListener('click', openDrawer);
+  closeBtn.addEventListener('click', closeDrawer);
+  overlay.addEventListener('click', closeDrawer);
+}
+setupDrawer('keyTrigger','keyOverlay','keyDrawer','keyClose');
+setupDrawer('aboutTrigger','aboutOverlay','aboutDrawer','aboutClose');
+$('homeAboutLink').addEventListener('click', event => {
+  event.preventDefault();
+  $('aboutTrigger').click();
+});
+</script>
+</body>
+</html>

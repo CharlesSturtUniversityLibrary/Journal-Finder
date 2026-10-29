@@ -1,0 +1,31 @@
+{
+  "_readme": "CSU Journal Finder — Agreement cap configuration. Edit this file and upload to GitHub to update cap warnings without touching index.html.",
+  "_last_updated": "2026-10-28",
+  "_updated_by": "CSU Library",
+  "data_last_updated": "28 October 2026",
+  "data_last_updated_iso": "2026-10-28",
+
+  "cap_warnings": {
+    "Wiley|Fully Open Access": {
+      "status": "unavailable",
+      "label": "Wiley Gold OA — agreement funding unavailable",
+      "detail": "CSU Library is treating the 2026 Wiley allocation for fully open access (Gold) journals as unavailable for the remainder of 2026. New articles are not expected to be funded through the agreement until January 2027. A 20% APC discount may apply if alternative funding is available. Wiley hybrid journals are unaffected.",
+      "link": "https://libguides.csu.edu.au/OpenAccess/readandpublish"
+    },
+    "Springer|Fully Open Access": {
+      "status": "ok",
+      "label": "Springer Nature OA — uncapped",
+      "detail": "The Springer Nature agreement is uncapped for 2026–2028. A forecast pool applies to certain Springer and Palgrave Open fully OA titles, but publishing does not cease if the pool's maximum threshold is reached.",
+      "link": "https://caul.libguides.com/read-and-publish/springer-nature"
+    }
+  },
+
+  "_status_values": {
+    "ok": "No cap warning — agreement is uncapped or cap not yet reached",
+    "capped": "Cap warning active — show amber warning badge on journal cards",
+    "reached": "Cap reached — show red warning badge, publishing no longer funded",
+    "unavailable": "Agreement funding unavailable — show red warning badge and exclude from free-to-publish results"
+  },
+
+  "_how_to_update": "To clear a warning, change its status to 'ok'. Use 'capped' for a cap risk, 'reached' for confirmed exhaustion, or 'unavailable' when CSU Library is treating agreement funding as unavailable. Upload this file to your GitHub repo alongside index.html. Changes take effect within 2 minutes."
+}
